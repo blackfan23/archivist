@@ -1,0 +1,23 @@
+{
+  "$schema": "../../../../../../node_modules/nx-electron/src/validation/maker.schema.json",
+  "productName": "Archivist",
+  "appId": "com.medularity.archivist",
+  "asarUnpack": [
+    "**/node_modules/ffprobe-static/**",
+    "**/node_modules/ffmpeg-static/**"
+  ],
+  "mac": {
+    "category": "public.app-category.utilities",
+    "icon": "apps/archivist/electron/src/assets/icon.png",
+    "target": ["dmg", "zip"]
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "apps/archivist/electron/src/assets/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"]
+  },
+  "npmRebuild": false,
+  "files": ["!**/node_modules/canvas/**", "!**/node_modules/**/canvas/**"]
+}
