@@ -1,0 +1,77 @@
+{
+  "name": "archivist",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/archivist/electron/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "dependsOn": [
+        {
+          "projects": ["archivist-frontend"],
+          "target": "build"
+        }
+      ],
+      "executor": "nx-electron:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/archivist",
+        "main": "apps/archivist/electron/src/main.ts",
+        "tsConfig": "apps/archivist/electron/tsconfig.app.json",
+        "assets": ["apps/archivist/electron/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/archivist/electron/src/environments/environment.ts",
+              "with": "apps/archivist/electron/src/environments/environment.prod.ts"
+            }
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run archivist-frontend:serve",
+          "nx run archivist:serve-electron"
+        ]
+      }
+    },
+    "serve-electron": {
+      "executor": "nx-electron:execute",
+      "options": {
+        "buildTarget": "archivist:build"
+      }
+    },
+    "package": {
+      "dependsOn": ["build"],
+      "executor": "nx-electron:package",
+      "options": {
+        "name": "archivist",
+        "frontendProject": "archivist-frontend",
+        "sourcePath": "dist/apps",
+        "outputPath": "dist/packages",
+        "prepackageOnly": true
+      }
+    },
+    "make": {
+      "dependsOn": ["build"],
+      "executor": "nx-electron:make",
+      "options": {
+        "name": "archivist",
+        "frontendProject": "archivist-frontend",
+        "sourcePath": "dist/apps",
+        "outputPath": "dist/executables",
+        "makerOptionsPath": "apps/archivist/electron/src/app/options/maker.options.json"
+      }
+    },
+    "lint": {
+      "command": "eslint apps/archivist/electron/**/*.ts"
+    }
+  }
+}
