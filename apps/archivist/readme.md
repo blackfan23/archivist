@@ -2,24 +2,26 @@
 
 A modern, cross-platform desktop application for managing and organizing your media library. Built with Electron and Angular, Archivist provides powerful tools for scanning, filtering, and maintaining your video collection.
 
-<!-- Add screenshots here -->
 
 ## Features
 
-- 📁 **Smart Scanning** - Recursively scan directories for video files
-- 🔍 **Advanced Filtering** - Filter by resolution, codec, audio tracks, bitrate, and more
-- ⭐ **Rating Integration** - Fetch ratings and metadata from TMDB/OMDB automatically (provide your own API key)
-- ✏️ **Metadata Editing** - Edit and embed metadata directly into your files
-- 🎬 **FFmpeg Integration** - Built-in FFmpeg support for media analysis and conversion
-- 🌙 **Dark/Light Themes** - Beautiful UI with theme support
-- 🌍 **Multi-language** - Internationalization support (for now eng, ger, swe)
+**Filtering** - Filter by resolution, codec, audio tracks, bitrate, and more
 
-## Tech Stack
+![Demo1](./docs/images/demo1.png)
 
-- **Frontend**: Angular 21, Tailwind CSS
-- **Desktop**: Electron
-- **Build System**: Nx (Monorepo)
-- **Package Manager**: Bun
+**Rating Integration** - Fetch ratings and metadata from TMDB/OMDB automatically (provide your own API key)
+**Metadata Editing** - Edit and embed metadata directly into your files
+
+![Demo2](./docs/images/demo2.png)
+
+**FFmpeg Integration** - Built-in FFmpeg support for media analysis and conversion
+
+![Demo3](./docs/images/demo3.png)
+
+**Dark/Light Themes** - Beautiful UI with theme support
+
+**Multi-language** - Internationalization support (for now eng, ger, swe)
+
 
 ## Prerequisites
 
@@ -27,7 +29,10 @@ A modern, cross-platform desktop application for managing and organizing your me
 - [Node.js](https://nodejs.org/) (v20+)
 - [FFmpeg](https://ffmpeg.org/) (bundled automatically)
 
+
 ## Installation
+
+> Always check the [build instructions](https://www.electronjs.org/docs/latest/development/build-instructions-gn) for your platform.
 
 ```bash
 # Clone the repository
@@ -98,7 +103,7 @@ apps/archivist/
 
 ## License
 
-MIT
+GNU GENERAL PUBLIC LICENSE v3.0
 
 ## Contributing
 
