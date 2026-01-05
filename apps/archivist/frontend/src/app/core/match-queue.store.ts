@@ -39,6 +39,10 @@ export class MatchQueueStore {
 
   readonly hasItems = computed(() => this._queue().length > 0);
 
+  readonly finishedCount = computed(() => 
+    this._queue().filter(item => item.status === 'success' || item.status === 'error').length
+  );
+
   addToQueue(file: MediaFile, metadata: TmdbMetadata, embedMetadata: boolean): void {
     const previewFilename = this.generatePreviewFilename(file, metadata);
     
@@ -60,7 +64,10 @@ export class MatchQueueStore {
 
   clearQueue(): void {
     if (this._isProcessing()) return;
-    this._queue.set([]);
+    // Only remove finished items (success or error), keep pending items
+    this._queue.update(queue => 
+      queue.filter(item => item.status === 'pending')
+    );
   }
 
   openPanel(): void {

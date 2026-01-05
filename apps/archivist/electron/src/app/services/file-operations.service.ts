@@ -1,5 +1,5 @@
-import { access, constants, mkdir, rename, rmdir, unlink } from 'fs/promises';
-import { basename, dirname, join } from 'path';
+import { access, constants, mkdir, readdir, rename, rmdir, unlink } from 'fs/promises';
+import { basename, dirname, extname, join } from 'path';
 import { BatchResult } from '../models';
 
 export async function renameFile(oldPath: string, newPath: string): Promise<void> {
@@ -12,6 +12,84 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
   
   // Perform rename
   await rename(oldPath, newPath);
+}
+
+// Supported subtitle file extensions
+const SUBTITLE_EXTENSIONS = ['.srt', '.sub', '.ass', '.ssa', '.vtt', '.idx'];
+
+/**
+ * Find subtitle files associated with a media file.
+ * Matches subtitles that share the base filename, including language suffixes.
+ * e.g., "Movie.srt", "Movie.en.srt", "Movie.forced.en.srt"
+ */
+export async function findAssociatedSubtitles(mediaPath: string): Promise<string[]> {
+  const dir = dirname(mediaPath);
+  const mediaExt = extname(mediaPath);
+  const baseName = basename(mediaPath, mediaExt);
+  
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return [];
+  }
+  
+  const subtitles: string[] = [];
+  
+  for (const entry of entries) {
+    const entryExt = extname(entry).toLowerCase();
+    if (SUBTITLE_EXTENSIONS.includes(entryExt)) {
+      // Check if subtitle starts with the media base name
+      const entryBase = entry.slice(0, -entryExt.length);
+      if (entryBase === baseName || entryBase.startsWith(baseName + '.')) {
+        subtitles.push(join(dir, entry));
+      }
+    }
+  }
+  
+  return subtitles;
+}
+
+/**
+ * Rename a media file and its associated subtitle files.
+ * Returns the list of renamed subtitle paths.
+ */
+export async function renameFileWithSubtitles(
+  oldPath: string, 
+  newPath: string
+): Promise<string[]> {
+  const oldExt = extname(oldPath);
+  const newExt = extname(newPath);
+  const oldBaseName = basename(oldPath, oldExt);
+  const newBaseName = basename(newPath, newExt);
+  const newDir = dirname(newPath);
+  
+  // Find subtitle files before renaming
+  const subtitles = await findAssociatedSubtitles(oldPath);
+  const renamedSubtitles: string[] = [];
+  
+  // Rename the main media file
+  await renameFile(oldPath, newPath);
+  
+  // Rename each associated subtitle file
+  for (const subPath of subtitles) {
+    const subExt = extname(subPath);
+    const subBaseName = basename(subPath, subExt);
+    
+    // Preserve language/type suffixes like ".en" or ".forced"
+    const suffix = subBaseName.slice(oldBaseName.length);
+    const newSubName = newBaseName + suffix + subExt;
+    const newSubPath = join(newDir, newSubName);
+    
+    try {
+      await renameFile(subPath, newSubPath);
+      renamedSubtitles.push(newSubPath);
+    } catch {
+      // Continue with other subtitles if one fails
+    }
+  }
+  
+  return renamedSubtitles;
 }
 
 export async function moveFile(sourcePath: string, destDir: string): Promise<string> {

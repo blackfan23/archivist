@@ -76,14 +76,19 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
             </button>
             @if (isRenaming()) {
               <div class="rename-inline">
-                <input
-                  type="text"
-                  [(ngModel)]="newName"
-                  (keyup.enter)="confirmRename()"
-                  (keyup.escape)="cancelRename()"
-                  [placeholder]="lang.translate('action.enterNewName')"
-                  class="rename-input"
-                />
+                <div class="rename-input-wrapper">
+                  <input
+                    type="text"
+                    [(ngModel)]="newName"
+                    (keyup.enter)="confirmRename()"
+                    (keyup.escape)="cancelRename()"
+                    [placeholder]="lang.translate('action.enterNewName')"
+                    class="rename-input"
+                  />
+                  @if (renameType() === 'file' && fileExtension) {
+                    <span class="file-extension">{{ fileExtension }}</span>
+                  }
+                </div>
                 <div class="rename-actions">
                   @if (renameType() === 'file') {
                     <button
@@ -382,18 +387,34 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         gap: 0.5rem;
       }
 
-      .rename-input {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
+      .rename-input-wrapper {
+        display: flex;
+        align-items: center;
         background: var(--bg-tertiary);
         border: 1px solid var(--accent-color);
         border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .rename-input {
+        flex: 1;
+        padding: 0.5rem 0.75rem;
+        background: transparent;
+        border: none;
         color: var(--text-primary);
         font-size: 0.875rem;
+        min-width: 0;
       }
 
       .rename-input:focus {
         outline: none;
+      }
+
+      .file-extension {
+        padding: 0.5rem 0.75rem 0.5rem 0;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        white-space: nowrap;
       }
 
       .rename-actions {
@@ -491,6 +512,7 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
   readonly isRenaming = signal(false);
   readonly renameType = signal<'file' | 'folder'>('file');
   newName = '';
+  fileExtension = '';
 
   // Folders pending deletion
   private pendingFolderDeletion: string[] = [];
@@ -647,7 +669,15 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
     const selected = this.store.selectedFiles();
     if (selected.length !== 1) return;
 
-    this.newName = selected[0].filename;
+    const filename = selected[0].filename;
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      this.newName = filename.substring(0, lastDotIndex);
+      this.fileExtension = filename.substring(lastDotIndex);
+    } else {
+      this.newName = filename;
+      this.fileExtension = '';
+    }
     this.renameType.set('file');
     this.isRenaming.set(true);
   }
@@ -671,7 +701,9 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
 
     let success = false;
     if (this.renameType() === 'file') {
-      success = await this.store.renameSelectedFile(this.newName);
+      // Append the file extension back
+      const fullFilename = this.newName + this.fileExtension;
+      success = await this.store.renameSelectedFile(fullFilename);
     } else {
       success = await this.store.renameSelectedFolder(this.newName);
     }
@@ -688,6 +720,7 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
   cancelRename(): void {
     this.isRenaming.set(false);
     this.newName = '';
+    this.fileExtension = '';
   }
 
   useFolderName(): void {
@@ -696,10 +729,8 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
 
     const dir = selected[0].directory;
     const folderName = dir.substring(dir.lastIndexOf('/') + 1);
-    const ext = selected[0].filename.substring(
-      selected[0].filename.lastIndexOf('.'),
-    );
-    this.newName = folderName + ext;
+    // Extension is already stored in fileExtension, so just set the base name
+    this.newName = folderName;
   }
 
   // Editor

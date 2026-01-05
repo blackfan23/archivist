@@ -84,9 +84,9 @@ import { MatchQueueStore } from '../../core/match-queue.store';
               <button 
                 class="btn secondary" 
                 (click)="clearQueue()"
-                [disabled]="queueStore.isProcessing() || queueStore.queue().length === 0"
+                [disabled]="queueStore.isProcessing() || queueStore.finishedCount() === 0"
               >
-                {{ lang.translate('queue.clearQueue') }}
+                {{ lang.translate('queue.clearFinished') }}
               </button>
               <button 
                 class="btn primary" 

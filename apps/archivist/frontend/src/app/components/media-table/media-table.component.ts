@@ -33,14 +33,19 @@ import { SettingsService } from '../../core/settings.service';
         <!-- Rename dialog -->
         @if (isRenaming()) {
           <div class="rename-dialog">
-            <input 
-              type="text" 
-              [(ngModel)]="newName"
-              (keyup.enter)="confirmRename()"
-              (keyup.escape)="cancelRename()"
-              [placeholder]="lang.translate('action.enterNewName')"
-              class="rename-input"
-            />
+            <div class="rename-input-wrapper">
+              <input 
+                type="text" 
+                [(ngModel)]="newName"
+                (keyup.enter)="confirmRename()"
+                (keyup.escape)="cancelRename()"
+                [placeholder]="lang.translate('action.enterNewName')"
+                class="rename-input"
+              />
+              @if (renameType() === 'file' && fileExtension) {
+                <span class="file-extension">{{ fileExtension }}</span>
+              }
+            </div>
             @if (renameType() === 'file') {
               <button class="action-btn" (click)="useFolderName()" [title]="lang.translate('action.useFolderNameHint')">
                 {{ lang.translate('action.useFolderName') }}
@@ -240,15 +245,36 @@ import { SettingsService } from '../../core/settings.service';
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-color);
     }
+
+    .rename-input-wrapper {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
     
     .rename-input {
       flex: 1;
       padding: 0.5rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background: var(--bg-primary);
+      border: none;
+      background: transparent;
       color: var(--text-primary);
       font-size: 0.875rem;
+      min-width: 0;
+    }
+
+    .rename-input:focus {
+      outline: none;
+    }
+
+    .file-extension {
+      padding: 0.5rem 0.5rem 0.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      white-space: nowrap;
     }
     
     .table-header {
@@ -490,6 +516,7 @@ export class MediaTableComponent {
   readonly isRenaming = signal(false);
   readonly renameType = signal<'file' | 'folder'>('file');
   newName = '';
+  fileExtension = '';
   
 
   
@@ -599,7 +626,15 @@ export class MediaTableComponent {
     const selected = this.store.selectedFiles();
     if (selected.length !== 1) return;
     
-    this.newName = selected[0].filename;
+    const filename = selected[0].filename;
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      this.newName = filename.substring(0, lastDotIndex);
+      this.fileExtension = filename.substring(lastDotIndex);
+    } else {
+      this.newName = filename;
+      this.fileExtension = '';
+    }
     this.renameType.set('file');
     this.isRenaming.set(true);
   }
@@ -623,7 +658,9 @@ export class MediaTableComponent {
     
     let success = false;
     if (this.renameType() === 'file') {
-      success = await this.store.renameSelectedFile(this.newName);
+      // Append the file extension back
+      const fullFilename = this.newName + this.fileExtension;
+      success = await this.store.renameSelectedFile(fullFilename);
     } else {
       success = await this.store.renameSelectedFolder(this.newName);
     }
@@ -640,6 +677,7 @@ export class MediaTableComponent {
   cancelRename(): void {
     this.isRenaming.set(false);
     this.newName = '';
+    this.fileExtension = '';
   }
   
   useFolderName(): void {
@@ -650,11 +688,8 @@ export class MediaTableComponent {
     const dir = file.directory;
     const folderName = dir.substring(dir.lastIndexOf('/') + 1);
     
-    // Preserve the file extension
-    const extMatch = file.filename.match(/\.[^.]+$/);
-    const extension = extMatch ? extMatch[0] : '';
-    
-    this.newName = folderName + extension;
+    // Extension is already stored in fileExtension, so just set the base name
+    this.newName = folderName;
   }
   
   getRating(filename: string): import('../../core/electron.service').OmdbRating | undefined {

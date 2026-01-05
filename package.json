@@ -1,22 +1,12 @@
 {
-<<<<<<< HEAD
   "name": "archivist_repo",
-=======
-  "name": "archivist",
->>>>>>> 430048ca76063fcdf7c99434a75737e5e24f9721
   "author": {
     "name": "Julius Pargac",
     "url": "https://github.com/blackfan23"
   },
-<<<<<<< HEAD
   "private": false,
   "version": "1.0.0",
   "license": "GNU General Public License v3.0",
-=======
-  "private": true,
-  "version": "1.0.0",
-  "license": "MIT",
->>>>>>> 430048ca76063fcdf7c99434a75737e5e24f9721
   "scripts": {
     "archivist:win": "bunx @electron/rebuild --only pcsclite,iconv --arch x64 && nx build archivist-frontend --prod && nx build archivist --prod && nx make archivist --platform=windows --arch=x64",
     "archivist:mac": "bunx @electron/rebuild --only pcsclite,iconv --arch x64 && nx build archivist-frontend --prod && nx build archivist --prod && nx make archivist --platform=mac --arch=x64",

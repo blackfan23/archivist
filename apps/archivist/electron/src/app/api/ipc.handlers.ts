@@ -22,8 +22,8 @@ import {
     batchMove,
     batchRename,
     moveFile,
-    renameFile,
-    renameFolder,
+    renameFileWithSubtitles,
+    renameFolder
 } from '../services/file-operations.service';
 import { OmdbService } from '../services/omdb.service';
 import { requestCancelScan, scanDirectory } from '../services/scanner.service';
@@ -132,7 +132,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // --- File Operations ---
   ipcMain.handle('rename-file', async (_event, oldPath: string, newPath: string) => {
     try {
-      await renameFile(oldPath, newPath);
+      await renameFileWithSubtitles(oldPath, newPath);
       return true;
     } catch (error) {
       ErrorService.logError('rename-file', error, oldPath);
@@ -478,7 +478,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
       // Rename file if needed
       if (newPath !== currentPath) {
-        await renameFile(currentPath, newPath);
+        await renameFileWithSubtitles(currentPath, newPath);
         
         // Update library storage for this specific file
         const library = await getMediaLibrary();
