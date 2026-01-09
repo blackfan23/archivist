@@ -21,7 +21,7 @@ export interface ElectronAPI {
   selectSubtitleFile: () => Promise<string | null>;
   
   // Scanning
-  scanDirectory: (path: string) => Promise<unknown[]>;
+  scanDirectory: (path: string, forceFullScan?: boolean) => Promise<unknown[]>;
   cancelScan: () => Promise<boolean>;
   onScanProgress: (callback: (event: unknown, progress: unknown) => void) => void;
   removeScanProgressListener: () => void;

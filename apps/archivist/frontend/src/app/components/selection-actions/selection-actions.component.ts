@@ -162,6 +162,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
             }
           </div>
 
+
           <!-- Metadata Actions (single file only) -->
           <div class="action-section">
             <button class="action-btn" (click)="requeryRating()">
@@ -203,6 +204,22 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
                 />
               </svg>
               {{ lang.translate('action.writeMetadata') }}
+            </button>
+          </div>
+        } @else {
+          <!-- Multi-file actions -->
+          <div class="action-section">
+            <button class="action-btn" (click)="requeryRating()">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 4v6h6" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+              {{ lang.translate('action.requeryRating') }}
             </button>
           </div>
         }
@@ -743,8 +760,12 @@ export class SelectionActionsComponent implements OnInit, OnDestroy {
   // Rating
   async requeryRating(): Promise<void> {
     const selected = this.selectedFiles();
-    if (selected.length !== 1) return;
-    await this.store.requeryRating(selected[0].filename);
+    if (selected.length === 0) return;
+    
+    // Requery ratings for all selected files one by one
+    for (const file of selected) {
+      await this.store.requeryRating(file.filename);
+    }
   }
 
   // Match dialog methods

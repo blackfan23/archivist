@@ -50,6 +50,7 @@ export interface MediaFile {
   audioStreams: AudioStream[];
   subtitleStreams: SubtitleStream[];
   scannedAt: number;
+  modifiedAt: number;
 }
 
 export interface ScanProgress {
@@ -95,7 +96,7 @@ export interface FilterState {
   bitrateRanges: BitrateRange[];
   customBitrateRange?: { minMbps: number; maxMbps: number } | null;
   searchQuery?: string;
-  sortBy?: 'filename' | 'size' | 'duration' | 'resolution' | 'bitrate' | 'rating';
+  sortBy?: 'filename' | 'size' | 'duration' | 'resolution' | 'bitrate' | 'rating' | 'modified';
   sortDirection?: 'asc' | 'desc';
 }
 
@@ -282,7 +283,7 @@ export class ElectronService {
     return window.electron!.selectDestination();
   }
   
-  async scanDirectory(path: string): Promise<MediaFile[]> {
+  async scanDirectory(path: string, forceFullScan = false): Promise<MediaFile[]> {
     if (!this.isElectron()) return [];
     
     this._scanProgress.set({
@@ -293,7 +294,7 @@ export class ElectronService {
     });
     
     try {
-      const files = await window.electron!.scanDirectory(path);
+      const files = await window.electron!.scanDirectory(path, forceFullScan);
       return files as MediaFile[];
     } catch (error) {
       this._scanProgress.update((p) => ({

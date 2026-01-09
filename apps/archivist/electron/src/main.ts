@@ -1,8 +1,7 @@
-import SquirrelEvents from './app/events/squirrel.events';
-import ElectronEvents from './app/events/electron.events';
-import UpdateEvents from './app/events/update.events';
 import { app, BrowserWindow } from 'electron';
 import App from './app/app';
+import ElectronEvents from './app/events/electron.events';
+import SquirrelEvents from './app/events/squirrel.events';
 
 export default class Main {
   static initialize() {
@@ -32,3 +31,13 @@ Main.initialize();
 // bootstrap app
 Main.bootstrapApp();
 Main.bootstrapAppEvents();
+
+// Process-level error handlers to catch any uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // The error is logged to console - in a packaged app, consider writing to a log file
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});

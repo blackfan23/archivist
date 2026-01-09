@@ -74,7 +74,8 @@ export const MediaFileSchema = object({
   videoStreams: array(VideoStreamSchema),
   audioStreams: array(AudioStreamSchema),
   subtitleStreams: array(SubtitleStreamSchema),
-  scannedAt: number(), // Unix timestamp
+  scannedAt: number(), // Unix timestamp of when file was scanned
+  modifiedAt: number(), // Unix timestamp of file's last modification time
 });
 export type MediaFile = InferOutput<typeof MediaFileSchema>;
 
@@ -115,6 +116,7 @@ export const FilterStateSchema = object({
     literal('duration'),
     literal('resolution'),
     literal('bitrate'),
+    literal('modified'),
   ])),
   sortDirection: optional(union([literal('asc'), literal('desc')])),
 });

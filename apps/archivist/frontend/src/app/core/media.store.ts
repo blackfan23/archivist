@@ -235,6 +235,9 @@ export class MediaStore {
             comparison = ratingA - ratingB;
             break;
           }
+          case 'modified':
+            comparison = (a.modifiedAt ?? 0) - (b.modifiedAt ?? 0);
+            break;
         }
         return f.sortDirection === 'desc' ? -comparison : comparison;
       });
@@ -391,10 +394,10 @@ export class MediaStore {
     }
   }
 
-  async scanDirectory(path: string): Promise<void> {
+  async scanDirectory(path: string, forceFullScan = false): Promise<void> {
     this._isLoading.set(true);
     try {
-      const files = await this.electron.scanDirectory(path);
+      const files = await this.electron.scanDirectory(path, forceFullScan);
       this._mediaFiles.set(files);
       this._lastScanPath.set(path);
       this._lastScanAt.set(Date.now());
@@ -407,7 +410,8 @@ export class MediaStore {
   async selectAndScan(): Promise<void> {
     const path = await this.electron.selectDirectory();
     if (path) {
-      await this.scanDirectory(path);
+      // "Scan Folder" always does a full scan
+      await this.scanDirectory(path, true);
     }
   }
 

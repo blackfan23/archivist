@@ -103,6 +103,12 @@ import { SettingsService } from '../../core/settings.service';
               <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
             }
           </div>
+          <div class="col-modified" (click)="sortBy('modified')">
+            {{ lang.translate('table.modified') }}
+            @if (sortedBy() === 'modified') {
+              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+            }
+          </div>
         </div>
         
         <!-- Table body -->
@@ -166,6 +172,9 @@ import { SettingsService } from '../../core/settings.service';
               </div>
               <div class="col-size">
                 {{ formatSize(file.sizeBytes) }}
+              </div>
+              <div class="col-modified">
+                {{ formatDate(file.modifiedAt) }}
               </div>
             </div>
           }
@@ -483,6 +492,14 @@ import { SettingsService } from '../../core/settings.service';
       color: var(--text-secondary);
       text-align: right;
     }
+    
+    .col-modified {
+      width: 100px;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-align: right;
+    }
   `],
 })
 export class MediaTableComponent {
@@ -540,7 +557,7 @@ export class MediaTableComponent {
     this.store.deselectAll();
   }
   
-  sortBy(column: 'filename' | 'size' | 'duration' | 'resolution' | 'bitrate' | 'rating'): void {
+  sortBy(column: 'filename' | 'size' | 'duration' | 'resolution' | 'bitrate' | 'rating' | 'modified'): void {
     const current = this.filters();
     const newDir = current.sortBy === column && current.sortDirection === 'asc' ? 'desc' : 'asc';
     this.store.updateFilters({ sortBy: column, sortDirection: newDir });
@@ -751,6 +768,16 @@ export class MediaTableComponent {
     if (!bitsPerSecond) return '--';
     const mbps = bitsPerSecond / 1_000_000;
     return `${mbps.toFixed(1)} Mb`;
+  }
+  
+  formatDate(timestamp?: number): string {
+    if (!timestamp) return '--';
+    const date = new Date(timestamp);
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
   
   formatLanguage(lang: string): string {

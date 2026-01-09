@@ -23,7 +23,7 @@ export interface ElectronAPI {
   selectSubtitleFile: () => Promise<string | null>;
   
   // Scanning
-  scanDirectory: (path: string) => Promise<unknown[]>;
+  scanDirectory: (path: string, forceFullScan?: boolean) => Promise<unknown[]>;
   cancelScan: () => Promise<boolean>;
   onScanProgress: (callback: (event: IpcRendererEvent, progress: unknown) => void) => void;
   removeScanProgressListener: () => void;
@@ -135,7 +135,7 @@ contextBridge.exposeInMainWorld('electron', {
   selectDestination: () => ipcRenderer.invoke('select-destination'),
   
   // Scanning
-  scanDirectory: (path: string) => ipcRenderer.invoke('scan-directory', path),
+  scanDirectory: (path: string, forceFullScan?: boolean) => ipcRenderer.invoke('scan-directory', path, forceFullScan),
   cancelScan: () => ipcRenderer.invoke('cancel-scan'),
   onScanProgress: (callback: (event: IpcRendererEvent, progress: unknown) => void) => {
     scanProgressCallback = callback;

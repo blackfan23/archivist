@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { app } from 'electron';
+import { stat } from 'fs/promises';
 import { arch, platform } from 'os';
 import { basename, dirname, extname, join } from 'path';
 import {
@@ -124,7 +125,11 @@ function parseSubtitleStream(stream: FFprobeStream): SubtitleStream {
   };
 }
 
-export function probeFile(filePath: string): Promise<MediaFile> {
+export async function probeFile(filePath: string): Promise<MediaFile> {
+  // Get file modification time
+  const fileStat = await stat(filePath);
+  const modifiedAt = fileStat.mtimeMs;
+  
   return new Promise((resolve, reject) => {
     const args = [
       '-v', 'quiet',
@@ -183,6 +188,7 @@ export function probeFile(filePath: string): Promise<MediaFile> {
           audioStreams,
           subtitleStreams,
           scannedAt: Date.now(),
+          modifiedAt,
         };
 
         resolve(mediaFile);

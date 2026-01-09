@@ -18,14 +18,11 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
 const SUBTITLE_EXTENSIONS = ['.srt', '.sub', '.ass', '.ssa', '.vtt', '.idx'];
 
 /**
- * Find subtitle files associated with a media file.
- * Matches subtitles that share the base filename, including language suffixes.
- * e.g., "Movie.srt", "Movie.en.srt", "Movie.forced.en.srt"
+ * Find ALL subtitle files in the same directory as the media file.
+ * Returns all subtitle files regardless of their base name.
  */
-export async function findAssociatedSubtitles(mediaPath: string): Promise<string[]> {
+export async function findAllSubtitlesInFolder(mediaPath: string): Promise<string[]> {
   const dir = dirname(mediaPath);
-  const mediaExt = extname(mediaPath);
-  const baseName = basename(mediaPath, mediaExt);
   
   let entries: string[];
   try {
@@ -39,11 +36,7 @@ export async function findAssociatedSubtitles(mediaPath: string): Promise<string
   for (const entry of entries) {
     const entryExt = extname(entry).toLowerCase();
     if (SUBTITLE_EXTENSIONS.includes(entryExt)) {
-      // Check if subtitle starts with the media base name
-      const entryBase = entry.slice(0, -entryExt.length);
-      if (entryBase === baseName || entryBase.startsWith(baseName + '.')) {
-        subtitles.push(join(dir, entry));
-      }
+      subtitles.push(join(dir, entry));
     }
   }
   
@@ -51,34 +44,74 @@ export async function findAssociatedSubtitles(mediaPath: string): Promise<string
 }
 
 /**
- * Rename a media file and its associated subtitle files.
- * Returns the list of renamed subtitle paths.
+ * Extract language/track suffix from a subtitle filename.
+ * e.g., "Movie.en.srt" -> ".en", "Movie.forced.en.srt" -> ".forced.en"
+ * Returns empty string if no suffix detected.
+ */
+function extractSubtitleSuffix(subtitlePath: string): string {
+  const ext = extname(subtitlePath);
+  const baseName = basename(subtitlePath, ext);
+  
+  // Common language codes and modifiers
+  const parts = baseName.split('.');
+  if (parts.length <= 1) return '';
+  
+  // Take the last parts that look like language codes or modifiers
+  const suffixParts: string[] = [];
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const part = parts[i].toLowerCase();
+    // Check if it's a language code (2-3 chars) or common modifier
+    if (part.length <= 3 || ['forced', 'sdh', 'cc', 'default', 'hi'].includes(part)) {
+      suffixParts.unshift(parts[i]);
+    } else {
+      break;
+    }
+  }
+  
+  return suffixParts.length > 0 ? '.' + suffixParts.join('.') : '';
+}
+
+/**
+ * Rename a media file and ALL subtitle files in the same folder.
+ * All subtitles are renamed to match the new media filename,
+ * preserving their language/track suffixes and extensions.
  */
 export async function renameFileWithSubtitles(
   oldPath: string, 
   newPath: string
 ): Promise<string[]> {
-  const oldExt = extname(oldPath);
   const newExt = extname(newPath);
-  const oldBaseName = basename(oldPath, oldExt);
   const newBaseName = basename(newPath, newExt);
   const newDir = dirname(newPath);
   
-  // Find subtitle files before renaming
-  const subtitles = await findAssociatedSubtitles(oldPath);
+  // Find ALL subtitle files in the folder before renaming
+  const subtitles = await findAllSubtitlesInFolder(oldPath);
   const renamedSubtitles: string[] = [];
   
   // Rename the main media file
   await renameFile(oldPath, newPath);
   
-  // Rename each associated subtitle file
+  // Track used names to avoid conflicts
+  const usedNames = new Set<string>();
+  
+  // Rename each subtitle file to match the new media filename
   for (const subPath of subtitles) {
     const subExt = extname(subPath);
-    const subBaseName = basename(subPath, subExt);
+    const suffix = extractSubtitleSuffix(subPath);
     
-    // Preserve language/type suffixes like ".en" or ".forced"
-    const suffix = subBaseName.slice(oldBaseName.length);
-    const newSubName = newBaseName + suffix + subExt;
+    // Build new subtitle name: newBaseName + suffix + extension
+    let newSubName = newBaseName + suffix + subExt;
+    
+    // Handle potential name conflicts by adding an index
+    if (usedNames.has(newSubName.toLowerCase())) {
+      let index = 2;
+      while (usedNames.has(`${newBaseName}${suffix}.${index}${subExt}`.toLowerCase())) {
+        index++;
+      }
+      newSubName = `${newBaseName}${suffix}.${index}${subExt}`;
+    }
+    usedNames.add(newSubName.toLowerCase());
+    
     const newSubPath = join(newDir, newSubName);
     
     try {

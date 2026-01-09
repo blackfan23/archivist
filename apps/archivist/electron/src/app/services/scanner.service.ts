@@ -24,7 +24,7 @@ export function requestCancelScan(): void {
 async function findMediaFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   
-  async function walkDir(dir: string): Promise<void> {
+  async function walkDir(dir: string, isRoot = false): Promise<void> {
     if (cancelRequested) return;
     
     try {
@@ -38,19 +38,23 @@ async function findMediaFiles(directory: string): Promise<string[]> {
         if (entry.isDirectory()) {
           // Skip hidden directories
           if (!entry.name.startsWith('.')) {
-            await walkDir(fullPath);
+            await walkDir(fullPath, false);
           }
         } else if (entry.isFile() && isSupportedMediaFile(entry.name)) {
           files.push(fullPath);
         }
       }
     } catch (err) {
-      // Skip directories we can't read (permission issues, etc.)
+      if (isRoot) {
+        // Throw error for root directory - this is a critical failure
+        throw err;
+      }
+      // Skip subdirectories we can't read (permission issues, etc.)
       console.warn(`Cannot read directory ${dir}:`, err);
     }
   }
   
-  await walkDir(directory);
+  await walkDir(directory, true);
   return files;
 }
 

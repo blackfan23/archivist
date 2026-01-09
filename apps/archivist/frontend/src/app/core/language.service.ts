@@ -49,6 +49,7 @@ const TRANSLATIONS = {
     'table.duration': 'Duration',
     'table.bitrate': 'Bitrate',
     'table.size': 'Size',
+    'table.modified': 'Modified',
     'table.noFiles': 'No media files',
     'table.scanToStart': 'Click "Scan Folder" to select a directory',
     'table.loadingLibrary': 'Loading library...',
@@ -235,6 +236,7 @@ const TRANSLATIONS = {
     'table.duration': 'Längd',
     'table.bitrate': 'Bitrate',
     'table.size': 'Storlek',
+    'table.modified': 'Ändrad',
     'table.noFiles': 'Inga mediefiler',
     'table.scanToStart': 'Klicka på "Skanna Mapp" för att välja en katalog',
     'table.loadingLibrary': 'Laddar bibliotek...',
@@ -421,6 +423,7 @@ const TRANSLATIONS = {
     'table.duration': 'Dauer',
     'table.bitrate': 'Bitrate',
     'table.size': 'Größe',
+    'table.modified': 'Geändert',
     'table.noFiles': 'Keine Mediendateien',
     'table.scanToStart':
       'Klicken Sie auf "Ordner scannen" um ein Verzeichnis auszuwählen',
