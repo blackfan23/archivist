@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/archivist/frontend/src",
-  "tags": [],
+  "tags": ["scope:archivist"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",

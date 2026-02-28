@@ -1,99 +1,12 @@
-export interface TmdbSearchResult {
-  id: number;
-  title: string;
-  release_date: string;
-  vote_average: number;
-  vote_count: number;
-  poster_path: string | null;
-  overview: string;
-}
-
-export interface TmdbMovieDetails {
-  id: number;
-  imdb_id: string;
-  title: string;
-  release_date: string;
-  vote_average: number;
-  vote_count: number;
-  runtime: number;
-  genres: Array<{ id: number; name: string }>;
-  poster_path: string | null;
-  overview: string;
-}
-
-export interface TmdbRating {
-  tmdbId: number;
-  imdbId: string;
-  title: string;
-  year: string;
-  rating: number;
-  voteCount: number;
-  runtime: string;
-  genre: string;
-  posterUrl: string | null;
-  overview: string;
-  fetchedAt: number;
-}
-
-// Multi-search result types
-export interface TmdbMultiSearchMovieResult {
-  id: number;
-  media_type: 'movie';
-  title: string;
-  release_date: string;
-  vote_average: number;
-  poster_path: string | null;
-  overview: string;
-}
-
-export interface TmdbMultiSearchTvResult {
-  id: number;
-  media_type: 'tv';
-  name: string;
-  first_air_date: string;
-  vote_average: number;
-  poster_path: string | null;
-  overview: string;
-}
-
-export type TmdbMultiSearchResult =
-  | TmdbMultiSearchMovieResult
-  | TmdbMultiSearchTvResult;
-
-// Unified match result for UI
-export interface TmdbMatchResult {
-  id: number;
-  type: 'movie' | 'tv';
-  title: string;
-  year: string;
-  rating: number;
-  posterUrl: string | null;
-  overview: string;
-}
-
-// TV Show specific types
-export interface TmdbTvShowDetails {
-  id: number;
-  name: string;
-  first_air_date: string;
-  vote_average: number;
-  number_of_seasons: number;
-  number_of_episodes: number;
-  poster_path: string | null;
-  overview: string;
-  genres: Array<{ id: number; name: string }>;
-}
-
-export interface TmdbEpisodeDetails {
-  id: number;
-  name: string;
-  episode_number: number;
-  season_number: number;
-  air_date: string;
-  overview: string;
-  still_path: string | null;
-  vote_average: number;
-}
+import {
+  TmdbEpisodeDetails,
+  TmdbMatchResult,
+  TmdbMovieDetails,
+  TmdbRating,
+  TmdbSearchResult,
+  TmdbSeasonDetails,
+  TmdbTvShowDetails,
+} from '@medularity/archivist-core';
 
 export class TmdbService {
   private static readonly BASE_URL = 'https://api.themoviedb.org/3';
@@ -102,7 +15,9 @@ export class TmdbService {
   /**
    * Validate an API key by calling the TMDB configuration endpoint
    */
-  static async validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+  static async validateApiKey(
+    apiKey: string,
+  ): Promise<{ valid: boolean; error?: string }> {
     if (!apiKey || !apiKey.trim()) {
       return { valid: false, error: 'API key is empty' };
     }
@@ -131,8 +46,7 @@ export class TmdbService {
     year?: string,
   ): Promise<TmdbRating | null> {
     if (!apiKey) {
-      console.warn('TMDB API fetch skipped: No API key provided');
-      return null;
+      throw new Error('MISSING_API_KEY');
     }
 
     try {
@@ -187,7 +101,10 @@ export class TmdbService {
     query: string,
     apiKey: string,
   ): Promise<TmdbMatchResult[]> {
-    if (!apiKey || !query.trim()) {
+    if (!apiKey) {
+      throw new Error('MISSING_API_KEY');
+    }
+    if (!query.trim()) {
       return [];
     }
 
@@ -195,7 +112,7 @@ export class TmdbService {
       const searchParams = new URLSearchParams({
         api_key: apiKey,
         query: query.trim(),
-        include_adult: 'false',
+        include_adult: 'true',
       });
 
       const url = `${this.BASE_URL}/search/multi?${searchParams.toString()}`;
@@ -242,6 +159,85 @@ export class TmdbService {
       return results;
     } catch (error) {
       console.error('Error in TMDB multi search:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search specifically for movies and TV shows matching a specific year.
+   * Useful when a generic searchMulti pushes the exact year match off the first page.
+   */
+  static async searchByYear(
+    query: string,
+    year: string,
+    apiKey: string,
+  ): Promise<TmdbMatchResult[]> {
+    if (!apiKey) {
+      throw new Error('MISSING_API_KEY');
+    }
+    if (!query.trim() || !year.trim()) return [];
+
+    try {
+      const movieParams = new URLSearchParams({
+        api_key: apiKey,
+        query: query.trim(),
+        include_adult: 'true',
+        primary_release_year: year,
+      });
+
+      const tvParams = new URLSearchParams({
+        api_key: apiKey,
+        query: query.trim(),
+        include_adult: 'true',
+        first_air_date_year: year,
+      });
+
+      const [movieRes, tvRes] = await Promise.all([
+        fetch(`${this.BASE_URL}/search/movie?${movieParams.toString()}`),
+        fetch(`${this.BASE_URL}/search/tv?${tvParams.toString()}`),
+      ]);
+
+      const results: TmdbMatchResult[] = [];
+
+      if (movieRes.ok) {
+        const movieData = await movieRes.json();
+        for (const item of movieData.results || []) {
+          results.push({
+            id: item.id,
+            type: 'movie',
+            title: item.title,
+            year: item.release_date ? item.release_date.substring(0, 4) : '',
+            rating: item.vote_average,
+            posterUrl: item.poster_path
+              ? `${this.IMAGE_BASE_URL}${item.poster_path}`
+              : null,
+            overview: item.overview || '',
+          });
+        }
+      }
+
+      if (tvRes.ok) {
+        const tvData = await tvRes.json();
+        for (const item of tvData.results || []) {
+          results.push({
+            id: item.id,
+            type: 'tv',
+            title: item.name,
+            year: item.first_air_date
+              ? item.first_air_date.substring(0, 4)
+              : '',
+            rating: item.vote_average,
+            posterUrl: item.poster_path
+              ? `${this.IMAGE_BASE_URL}${item.poster_path}`
+              : null,
+            overview: item.overview || '',
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error in TMDB targeted year search:', error);
       return [];
     }
   }
@@ -294,6 +290,32 @@ export class TmdbService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching episode:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get TV season details (including episodes)
+   */
+  static async getSeasonDetails(
+    tvId: number,
+    season: number,
+    apiKey: string,
+  ): Promise<TmdbSeasonDetails | null> {
+    if (!apiKey) return null;
+
+    try {
+      const url = `${this.BASE_URL}/tv/${tvId}/season/${season}?api_key=${apiKey}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        console.error(`TMDB season fetch failed: ${response.statusText}`);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching season details:', error);
       return null;
     }
   }

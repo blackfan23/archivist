@@ -26,8 +26,14 @@
       ],
       "@medularity/angular/decorators": [
         "libs/angular/decorators/src/index.ts"
+      ],
+      "@medularity/archivist-core": [
+        "libs/archivist-core/src/index.ts"
       ]
-    }
+    },
+    "types": [
+      "bun-types"
+    ]
   },
   "exclude": [
     "node_modules",

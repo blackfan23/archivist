@@ -1,13 +1,21 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import {
-    AudioChannelType,
-    BITRATE_THRESHOLDS,
-    BitrateRange,
-    ElectronService,
-    FilterState,
-    MediaFile,
-    OmdbRating,
-    ResolutionCategory,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
+import {
+  AudioChannelType,
+  BITRATE_THRESHOLDS,
+  BitrateRange,
+  ElectronService,
+  FilterState,
+  MediaFile,
+  OmdbRating,
+  ResolutionCategory,
+  TmdbRating,
 } from './electron.service';
 import { SettingsService } from './settings.service';
 
@@ -35,6 +43,7 @@ export class MediaStore {
   private readonly _lastScanPath = signal<string | null>(null);
   private readonly _lastScanAt = signal<number | null>(null);
   private readonly _isLoading = signal(false);
+  private readonly _error = signal<string | null>(null);
 
   // Filter state
   private readonly _filters = signal<FilterState>({
@@ -53,10 +62,13 @@ export class MediaStore {
   readonly lastScanPath = this._lastScanPath.asReadonly();
   readonly lastScanAt = this._lastScanAt.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
+  readonly error = this._error.asReadonly();
   readonly filters = this._filters.asReadonly();
 
   // Ratings state
-  private readonly _ratings = signal<Record<string, OmdbRating>>({});
+  private readonly _ratings = signal<Record<string, OmdbRating | TmdbRating>>(
+    {},
+  );
   readonly ratings = this._ratings.asReadonly();
 
   readonly scanProgress = this.electron.scanProgress;
@@ -253,6 +265,40 @@ export class MediaStore {
     filteredSize: this.filteredFiles().reduce((sum, f) => sum + f.sizeBytes, 0),
   }));
 
+  /**
+   * Ratings resource — automatically refetches when filteredFiles changes.
+   * Using resource() ensures proper async lifecycle and reactive re-execution.
+   */
+  private readonly _ratingsResource = resource<
+    Record<string, OmdbRating | TmdbRating>,
+    { files: MediaFile[]; provider: string } | null
+  >({
+    params: () => {
+      const files = this.filteredFiles();
+      const provider = this.settings.$ratingProvider();
+      if (files.length === 0) return null;
+      return { files, provider };
+    },
+    loader: async ({ params }) => {
+      if (!params) return {};
+      const { files, provider } = params;
+
+      // Build items to fetch, skipping entries already in local ratings signal
+      const currentRatings = this._ratings();
+      const items = files
+        .map((f: MediaFile) => this.parseFilename(f.filename))
+        .filter((item: { title: string; year?: string }) => {
+          const key = `${provider}:${item.title}-${item.year || ''}`;
+          return !(key in currentRatings);
+        })
+        .slice(0, 50);
+
+      if (items.length === 0) return {};
+
+      return this.electron.fetchRatings(items);
+    },
+  });
+
   constructor() {
     // Persist filters on change
     effect(() => {
@@ -263,42 +309,16 @@ export class MediaStore {
       }
     });
 
-    // Fetch ratings for filtered files
-    effect(async () => {
-      const files = this.filteredFiles();
-      if (files.length === 0) return;
-
-      // Simple debounce/throttle could be added here if needed
-      // Extract clean titles and years
-      const items = files.map((f) => this.parseFilename(f.filename));
-
-      // Filter out items we already have
-      const currentRatings = this._ratings();
-      const itemsToFetch = items.filter((item) => {
-        const key = `${item.title}-${item.year || ''}`;
-        // If we have it and it's not too old?
-        // For now, the backend handles cache expiry check efficiently.
-        // But to save IPC calls, we can check if we have a key in our local signal.
-        // However, the IPC also returns cached items from disk which might be fresher or older.
-        // Let's just ask backend, it's safer for persistence validation.
-        return true;
-      });
-
-      if (itemsToFetch.length === 0) return;
-
-      // Batching could be done here (e.g. 50 at a time)
-      // For now send all, assuming generic list size is manageable (< 100 visible?)
-      // If list is huge (1000s), this might block.
-      // Let's limit to top 50 for now or rely on user search.
-      const batch = itemsToFetch.slice(0, 50);
-
-      const newRatings = await this.electron.fetchRatings(batch);
-
-      this._ratings.update((current) => ({ ...current, ...newRatings }));
+    // Merge resource results into the ratings signal
+    effect(() => {
+      const newRatings = this._ratingsResource.value();
+      if (newRatings && Object.keys(newRatings).length > 0) {
+        this._ratings.update((current) => ({ ...current, ...newRatings }));
+      }
     });
   }
 
-  getRating(filename: string): OmdbRating | undefined {
+  getRating(filename: string): OmdbRating | TmdbRating | undefined {
     const { title, year } = this.parseFilename(filename);
     const provider = this.settings.$ratingProvider();
     const key = `${provider}:${title}-${year || ''}`;
@@ -311,19 +331,23 @@ export class MediaStore {
    */
   private getNumericRating(filename: string): number {
     const rating = this.getRating(filename);
-    if (!rating || rating.notFound) return 0;
-    
+    if (!rating) return 0;
+
     // OMDB format - has imdbRating string (e.g., "7.5")
-    if ('imdbRating' in rating && typeof rating.imdbRating === 'string' && rating.imdbRating) {
+    if ('imdbRating' in rating) {
+      if (rating.notFound) return 0;
       const parsed = parseFloat(rating.imdbRating);
       return isNaN(parsed) ? 0 : parsed;
     }
-    
+
     // TMDB format - has rating number (0-10)
-    if ('rating' in rating && typeof (rating as unknown as { rating: number }).rating === 'number') {
+    if (
+      'rating' in rating &&
+      typeof (rating as unknown as { rating: number }).rating === 'number'
+    ) {
       return (rating as unknown as { rating: number }).rating;
     }
-    
+
     return 0;
   }
 
@@ -331,14 +355,14 @@ export class MediaStore {
     const { title, year } = this.parseFilename(filename);
     const provider = this.settings.$ratingProvider();
     const key = `${provider}:${title}-${year || ''}`;
-    
+
     // Clear the local rating first
     this._ratings.update((current) => {
       const updated = { ...current };
       delete updated[key];
       return updated;
     });
-    
+
     // Request the backend to requery (which will also clear cache)
     const result = await this.electron.requeryRating({ title, year });
     if (result) {
@@ -352,7 +376,7 @@ export class MediaStore {
 
     // Try to find year (4 digits in parentheses or separated by dots/spaces)
     // Matches: (2020), .2020.,  2020
-    const yearMatch = name.match(/[\(\.\s](19|20)\d{2}[\)\.\s]/);
+    const yearMatch = name.match(/(?:^|[\(\.\s])(19|20)\d{2}(?:$|[\)\.\s])/);
     let year: string | undefined;
 
     if (yearMatch) {
@@ -402,16 +426,34 @@ export class MediaStore {
       this._lastScanPath.set(path);
       this._lastScanAt.set(Date.now());
       this._selectedIds.set(new Set());
+      this._error.set(null);
+    } catch (err) {
+      console.error('Directory scan failed:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      this._error.set(message);
     } finally {
       this._isLoading.set(false);
     }
   }
 
   async selectAndScan(): Promise<void> {
+    if (this.isScanning()) return;
+
     const path = await this.electron.selectDirectory();
     if (path) {
+      // Set path immediately so the UI reflects the change
+      this._lastScanPath.set(path);
       // "Scan Folder" always does a full scan
       await this.scanDirectory(path, true);
+    }
+  }
+
+  async selectPathOnly(): Promise<void> {
+    const path = await this.electron.selectDirectory();
+    if (path) {
+      this._lastScanPath.set(path);
+      // Ensure the path is persisted in the backend as well
+      // No immediate scan triggered here
     }
   }
 
@@ -529,11 +571,13 @@ export class MediaStore {
   }
 
   async deleteSeason(fileIds: string[]): Promise<OperationResult> {
-    const selectedFiles = this._mediaFiles().filter((f) => fileIds.includes(f.id));
+    const selectedFiles = this._mediaFiles().filter((f) =>
+      fileIds.includes(f.id),
+    );
     const directories = [...new Set(selectedFiles.map((f) => f.directory))];
 
     const filesInSeasons = this._mediaFiles().filter((f) =>
-      directories.includes(f.directory)
+      directories.includes(f.directory),
     );
 
     const pathsToDelete = filesInSeasons.map((f) => f.path);
@@ -544,11 +588,11 @@ export class MediaStore {
     if (result && result.successCount > 0) {
       const deletedPaths = new Set(
         pathsToDelete.filter(
-          (_, i) => !result.errors.some((e) => e.path === pathsToDelete[i])
-        )
+          (_, i) => !result.errors.some((e) => e.path === pathsToDelete[i]),
+        ),
       );
       this._mediaFiles.update((files) =>
-        files.filter((f) => !deletedPaths.has(f.path))
+        files.filter((f) => !deletedPaths.has(f.path)),
       );
       this._selectedIds.set(new Set());
     }
@@ -580,7 +624,7 @@ export class MediaStore {
     if (selected.length !== 1) return false;
 
     const file = selected[0];
-    const newPath = file.directory + '/' + newFilename;
+    const newPath = [file.directory, newFilename].join('/');
 
     const success = await this.electron.renameFile(file.path, newPath);
     if (success) {
@@ -627,11 +671,16 @@ export class MediaStore {
   updateFilePath(fileId: string, newPath: string): void {
     const newFilename = newPath.substring(newPath.lastIndexOf('/') + 1);
     const newDirectory = newPath.substring(0, newPath.lastIndexOf('/'));
-    
+
     this._mediaFiles.update((files) =>
       files.map((f) =>
         f.id === fileId
-          ? { ...f, path: newPath, filename: newFilename, directory: newDirectory }
+          ? {
+              ...f,
+              path: newPath,
+              filename: newFilename,
+              directory: newDirectory,
+            }
           : f,
       ),
     );

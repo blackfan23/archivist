@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from '@medularity/angular/notifications';
+import { ElectronService } from './core/electron.service';
 
 @Component({
   selector: 'app-root',
@@ -10,6 +11,20 @@ import { ToastContainerComponent } from '@medularity/angular/notifications';
     <router-outlet />
     <lib-toast-container />
   `,
-  styles: [`:host { display: block; height: 100vh; }`],
+  styles: [
+    `
+      :host {
+        display: block;
+        height: 100vh;
+      }
+    `,
+  ],
 })
-export class App {}
+export class App implements OnInit {
+  private readonly electronService = inject(ElectronService);
+
+  ngOnInit(): void {
+    console.log('Frontend ready');
+    this.electronService.appReady();
+  }
+}

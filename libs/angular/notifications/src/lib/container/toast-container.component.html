@@ -1,0 +1,17 @@
+<!-- Global container for position -->
+<!-- Desktop: top-right. Mobile: bottom-center (or full width bottom) -->
+<div
+  aria-live="assertive"
+  class="toast-container"
+>
+  <div class="toast-stack">
+    <!-- Notification list -->
+    @for (notification of notifications(); track notification.id) {
+      <lib-toast
+        [notification]="notification"
+        (dismiss)="dismiss($event)"
+        class="toast-item"
+      ></lib-toast>
+    }
+  </div>
+</div>

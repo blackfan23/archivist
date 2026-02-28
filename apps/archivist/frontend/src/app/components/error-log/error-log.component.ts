@@ -76,7 +76,7 @@ import { LanguageService } from '../../core/language.service';
     }
     
     .modal {
-      background: var(--bg-secondary);
+      background: var(--color-bg-secondary);
       border-radius: 12px;
       width: 90%;
       max-width: 600px;
@@ -91,13 +91,13 @@ import { LanguageService } from '../../core/language.service';
       align-items: center;
       justify-content: space-between;
       padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--color-border);
     }
     
     .modal-header h2 {
       margin: 0;
       font-size: 1.25rem;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
     }
     
     .close-btn {
@@ -107,7 +107,7 @@ import { LanguageService } from '../../core/language.service';
       background: none;
       border: none;
       border-radius: 6px;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -115,8 +115,8 @@ import { LanguageService } from '../../core/language.service';
     }
     
     .close-btn:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
     
     .close-btn svg {
@@ -138,7 +138,7 @@ import { LanguageService } from '../../core/language.service';
       justify-content: center;
       height: 100%;
       min-height: 200px;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       gap: 1rem;
     }
     
@@ -156,7 +156,7 @@ import { LanguageService } from '../../core/language.service';
     
     .error-item {
       padding: 0.75rem 1rem;
-      background: var(--bg-tertiary);
+      background: var(--color-bg-tertiary);
       border-radius: 8px;
       border-left: 3px solid #ef4444;
     }
@@ -171,13 +171,13 @@ import { LanguageService } from '../../core/language.service';
     .error-operation {
       font-weight: 600;
       font-size: 0.875rem;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
       font-family: monospace;
     }
     
     .error-time {
       font-size: 0.75rem;
-      color: var(--text-tertiary);
+      color: var(--color-text-muted);
     }
     
     .error-message {
@@ -188,7 +188,7 @@ import { LanguageService } from '../../core/language.service';
     
     .error-path {
       font-size: 0.75rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       margin-top: 0.25rem;
       font-family: monospace;
       word-break: break-all;
@@ -210,7 +210,7 @@ import { LanguageService } from '../../core/language.service';
       justify-content: flex-end;
       gap: 0.75rem;
       padding: 1rem 1.5rem;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid var(--color-border);
     }
     
     .clear-btn {
@@ -229,7 +229,7 @@ import { LanguageService } from '../../core/language.service';
     
     .close-modal-btn {
       padding: 0.5rem 1rem;
-      background: var(--accent-color);
+      background: var(--color-primary);
       border: none;
       border-radius: 6px;
       color: white;

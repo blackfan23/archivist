@@ -1,0 +1,16 @@
+{
+  "name": "archivist-core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/archivist-core/src",
+  "projectType": "library",
+  "tags": ["scope:archivist"],
+  "// targets": "to see all targets run: nx show project archivist-core --web",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun x tsc -p libs/archivist-core/tsconfig.lib.json --noEmit"
+      }
+    }
+  }
+}

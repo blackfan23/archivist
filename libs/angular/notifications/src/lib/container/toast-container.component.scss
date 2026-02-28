@@ -1,0 +1,37 @@
+// Toast Container Component Styles
+
+:host {
+  display: block;
+}
+
+.toast-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 1rem 1rem 1.5rem;
+  pointer-events: none;
+  z-index: 9999;
+
+  @media (min-width: 640px) {
+    padding: 1.5rem;
+    align-items: flex-start;
+  }
+}
+
+.toast-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    align-items: flex-end;
+  }
+}
+
+.toast-item {
+  width: 100%;
+  max-width: 24rem;
+}

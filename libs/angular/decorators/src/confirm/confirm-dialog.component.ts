@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Output,
-  signal,
+    ChangeDetectionStrategy,
+    Component,
+    EventEmitter,
+    Output,
+    signal,
 } from '@angular/core';
 
 export interface ConfirmDialogConfig {
@@ -21,41 +21,33 @@ export interface ConfirmDialogConfig {
   template: `
     @if (isVisible()) {
       <!-- Backdrop -->
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
-        (click)="onCancel()"
-      >
+      <div class="confirm-backdrop" (click)="onCancel()">
         <!-- Dialog -->
-        <div
-          class="bg-white dark:bg-zinc-800 rounded-xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden animate-scale-in"
-          (click)="$event.stopPropagation()"
-        >
+        <div class="confirm-dialog" (click)="$event.stopPropagation()">
           <!-- Header -->
-          <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <div class="confirm-header">
+            <h3 class="confirm-title">
               {{ config().header }}
             </h3>
             @if (config().message) {
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              <p class="confirm-message">
                 {{ config().message }}
               </p>
             }
           </div>
 
           <!-- Actions -->
-          <div
-            class="px-6 py-4 flex justify-end gap-3 bg-zinc-50 dark:bg-zinc-900/50"
-          >
+          <div class="confirm-actions">
             <button
               type="button"
-              class="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+              class="confirm-btn confirm-btn-secondary"
               (click)="onCancel()"
             >
               {{ config().negative }}
             </button>
             <button
               type="button"
-              class="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              class="confirm-btn confirm-btn-primary"
               (click)="onConfirm()"
             >
               {{ config().positive }}
@@ -69,6 +61,84 @@ export interface ConfirmDialogConfig {
     `
       :host {
         display: contents;
+      }
+
+      .confirm-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        animation: fade-in 0.15s ease-out;
+      }
+
+      .confirm-dialog {
+        background: var(--color-bg-secondary, #fff);
+        border-radius: 0.75rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--color-border, #e4e4e7);
+        max-width: 24rem;
+        width: 100%;
+        margin: 1rem;
+        overflow: hidden;
+        animation: scale-in 0.15s ease-out;
+      }
+
+      .confirm-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-border, #e4e4e7);
+      }
+
+      .confirm-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--color-text-primary, #18181b);
+        margin: 0;
+      }
+
+      .confirm-message {
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary, #52525b);
+      }
+
+      .confirm-actions {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        background: var(--color-bg-tertiary, #f4f4f5);
+      }
+
+      .confirm-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+      }
+
+      .confirm-btn-secondary {
+        color: var(--color-text-primary, #3f3f46);
+        background: var(--color-bg-tertiary, #e4e4e7);
+      }
+
+      .confirm-btn-secondary:hover {
+        opacity: 0.85;
+      }
+
+      .confirm-btn-primary {
+        color: #fff;
+        background: var(--color-primary, #7c3aed);
+      }
+
+      .confirm-btn-primary:hover {
+        background: var(--color-primary-dark, #6d28d9);
       }
 
       @keyframes fade-in {
@@ -89,14 +159,6 @@ export interface ConfirmDialogConfig {
           opacity: 1;
           transform: scale(1);
         }
-      }
-
-      .animate-fade-in {
-        animation: fade-in 0.15s ease-out;
-      }
-
-      .animate-scale-in {
-        animation: scale-in 0.15s ease-out;
       }
     `,
   ],

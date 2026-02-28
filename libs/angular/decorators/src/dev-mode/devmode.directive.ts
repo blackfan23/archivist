@@ -25,7 +25,7 @@ export class DevOnlyDirective implements OnInit {
     if (this.devOnly() === 'false') {
       this.isDevMode = false;
     } else {
-      this.isDevMode = this.devModeService.isProduction;
+      this.isDevMode = !this.devModeService.isProduction;
     }
     this.toggleVisibility();
   }

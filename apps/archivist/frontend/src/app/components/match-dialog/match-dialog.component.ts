@@ -1,30 +1,29 @@
-import { CommonModule } from '@angular/common';
 import {
-    Component,
-    computed,
-    EventEmitter,
-    inject,
-    Input,
-    OnChanges,
-    Output,
-    signal,
-    SimpleChanges,
+  Component,
+  computed,
+  inject,
+  input,
+  OnChanges,
+  output,
+  signal,
+  SimpleChanges,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import {
-    ElectronService,
-    MediaFile,
-    TmdbEpisodeDetails,
-    TmdbMatchResult,
-    TmdbMetadata,
+  ElectronService,
+  MediaFile,
+  TmdbEpisodeDetails,
+  TmdbMatchResult,
+  TmdbMetadata,
 } from '../../core/electron.service';
 import { LanguageService } from '../../core/language.service';
 
 @Component({
   selector: 'plex-match-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="overlay" (click)="close()">
       <div class="dialog" (click)="$event.stopPropagation()">
@@ -139,21 +138,50 @@ import { LanguageService } from '../../core/language.service';
 
         <footer class="dialog-footer">
           @if (selectedResult()) {
-            <div class="preview-section">
-              <div class="preview-row">
-                <span class="label"
-                  >{{ lang.translate('match.newFilename') }}:</span
-                >
-                <span class="preview-filename">{{ previewFilename() }}</span>
+            <div class="preview-row match-preview">
+              @if (selectedResult()?.posterUrl) {
+                <div class="poster-container">
+                  <img
+                    [src]="selectedResult()!.posterUrl"
+                    class="result-poster"
+                  />
+                  <a
+                    class="tmdb-link-overlay"
+                    [href]="getTmdbUrl(selectedResult()!)"
+                    target="_blank"
+                    [title]="lang.translate('match.viewOnTmdb')"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                      />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                </div>
+              }
+              <div class="preview-details">
+                <div class="preview-row">
+                  <span class="label"
+                    >{{ lang.translate('match.newFilename') }}:</span
+                  >
+                  <span class="preview-filename">{{ previewFilename() }}</span>
+                </div>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="embedMetadata"
+                    [disabled]="isProcessing()"
+                  />
+                  {{ lang.translate('match.embedMetadata') }}
+                </label>
               </div>
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="embedMetadata"
-                  [disabled]="isProcessing()"
-                />
-                {{ lang.translate('match.embedMetadata') }}
-              </label>
             </div>
           }
           <div class="footer-buttons">
@@ -164,13 +192,15 @@ import { LanguageService } from '../../core/language.service';
             >
               {{ lang.translate('action.cancel') }}
             </button>
-            <button
-              class="btn queue"
-              [disabled]="!canConfirm() || isProcessing()"
-              (click)="addToQueue()"
-            >
-              {{ lang.translate('queue.addToQueue') }}
-            </button>
+            @if (showQueueButton()) {
+              <button
+                class="btn queue"
+                [disabled]="!canConfirm() || isProcessing()"
+                (click)="addToQueue()"
+              >
+                {{ lang.translate('queue.addToQueue') }}
+              </button>
+            }
             <button
               class="btn primary"
               [disabled]="!canConfirm() || isProcessing()"
@@ -203,7 +233,7 @@ import { LanguageService } from '../../core/language.service';
         width: 90%;
         max-width: 700px;
         max-height: 80vh;
-        background: var(--bg-secondary);
+        background: var(--color-bg-secondary);
         border-radius: 12px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         display: flex;
@@ -221,15 +251,15 @@ import { LanguageService } from '../../core/language.service';
         justify-content: center;
         gap: 1rem;
         z-index: 10;
-        color: var(--text-primary);
+        color: var(--color-text-primary);
         font-size: 1rem;
       }
 
       .spinner {
         width: 48px;
         height: 48px;
-        border: 4px solid var(--bg-tertiary);
-        border-top-color: var(--accent-color);
+        border: 4px solid var(--color-bg-tertiary);
+        border-top-color: var(--color-primary);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
@@ -256,7 +286,7 @@ import { LanguageService } from '../../core/language.service';
         align-items: center;
         justify-content: space-between;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--color-border);
       }
 
       .dialog-header h2 {
@@ -270,15 +300,15 @@ import { LanguageService } from '../../core/language.service';
         height: 32px;
         border: none;
         background: transparent;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         font-size: 1.5rem;
         cursor: pointer;
         border-radius: 4px;
       }
 
       .close-btn:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
       }
 
       .dialog-body {
@@ -298,16 +328,16 @@ import { LanguageService } from '../../core/language.service';
       .search-input {
         flex: 1;
         padding: 0.75rem 1rem;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-color);
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
         border-radius: 8px;
         font-size: 1rem;
-        color: var(--text-primary);
+        color: var(--color-text-primary);
       }
 
       .search-input:focus {
         outline: none;
-        border-color: var(--accent-color);
+        border-color: var(--color-primary);
       }
 
       .episode-inputs {
@@ -315,7 +345,7 @@ import { LanguageService } from '../../core/language.service';
         gap: 1rem;
         align-items: center;
         padding: 0.75rem;
-        background: var(--bg-tertiary);
+        background: var(--color-bg-tertiary);
         border-radius: 8px;
       }
 
@@ -327,24 +357,24 @@ import { LanguageService } from '../../core/language.service';
 
       .input-group label {
         font-size: 0.875rem;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
       }
 
       .number-input {
         width: 60px;
         padding: 0.375rem 0.5rem;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-color);
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
         border-radius: 4px;
         font-size: 0.875rem;
-        color: var(--text-primary);
+        color: var(--color-text-primary);
         text-align: center;
       }
 
       .episode-title {
         flex: 1;
         font-size: 0.875rem;
-        color: var(--accent-color);
+        color: var(--color-primary);
         font-weight: 500;
       }
 
@@ -357,7 +387,7 @@ import { LanguageService } from '../../core/language.service';
       .no-results {
         text-align: center;
         padding: 2rem;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
       }
 
       .results-grid {
@@ -370,13 +400,13 @@ import { LanguageService } from '../../core/language.service';
         cursor: pointer;
         border-radius: 8px;
         overflow: hidden;
-        background: var(--bg-tertiary);
+        background: var(--color-bg-tertiary);
         border: 2px solid transparent;
         transition: all 0.2s ease;
       }
 
       .result-card:hover:not(.disabled) {
-        border-color: var(--text-secondary);
+        border-color: var(--color-text-secondary);
       }
 
       .result-card.disabled {
@@ -385,7 +415,7 @@ import { LanguageService } from '../../core/language.service';
       }
 
       .result-card.selected {
-        border-color: var(--accent-color);
+        border-color: var(--color-primary);
       }
 
       .poster {
@@ -400,7 +430,7 @@ import { LanguageService } from '../../core/language.service';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg-primary);
+        background: var(--color-bg-primary);
         font-size: 2rem;
       }
 
@@ -421,7 +451,7 @@ import { LanguageService } from '../../core/language.service';
 
       .result-year {
         font-size: 0.625rem;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
       }
 
       .result-type {
@@ -430,7 +460,7 @@ import { LanguageService } from '../../core/language.service';
 
       .preview-section {
         padding: 0.75rem;
-        background: var(--bg-tertiary);
+        background: var(--color-bg-tertiary);
         border-radius: 8px;
         display: flex;
         flex-direction: column;
@@ -444,12 +474,12 @@ import { LanguageService } from '../../core/language.service';
 
       .label {
         font-size: 0.875rem;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
       }
 
       .preview-filename {
         font-size: 0.875rem;
-        color: var(--accent-color);
+        color: var(--color-primary);
         font-weight: 500;
         word-break: break-all;
       }
@@ -459,7 +489,7 @@ import { LanguageService } from '../../core/language.service';
         align-items: center;
         gap: 0.5rem;
         font-size: 0.875rem;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         cursor: pointer;
       }
 
@@ -472,7 +502,7 @@ import { LanguageService } from '../../core/language.service';
         flex-direction: column;
         gap: 0.75rem;
         padding: 1rem 1.5rem;
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--color-border);
       }
 
       .dialog-footer .preview-section {
@@ -496,16 +526,16 @@ import { LanguageService } from '../../core/language.service';
       }
 
       .btn.secondary {
-        background: var(--bg-tertiary);
-        color: var(--text-primary);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
       }
 
       .btn.secondary:hover {
-        background: var(--bg-hover);
+        background: var(--color-bg-tertiary);
       }
 
       .btn.primary {
-        background: var(--accent-color);
+        background: var(--color-primary);
         color: white;
       }
 
@@ -514,9 +544,9 @@ import { LanguageService } from '../../core/language.service';
       }
 
       .btn.queue {
-        background: var(--bg-tertiary);
-        color: var(--accent-color);
-        border: 1px solid var(--accent-color);
+        background: var(--color-bg-tertiary);
+        color: var(--color-primary);
+        border: 1px solid var(--color-primary);
       }
 
       .btn.queue:hover:not(:disabled) {
@@ -527,6 +557,56 @@ import { LanguageService } from '../../core/language.service';
         opacity: 0.5;
         cursor: not-allowed;
       }
+
+      .match-preview {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+
+      .poster-container {
+        position: relative;
+        width: 60px;
+        height: 90px;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 1px solid var(--color-border);
+      }
+
+      .result-poster {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .tmdb-link-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .poster-container:hover .tmdb-link-overlay {
+        opacity: 1;
+      }
+
+      .tmdb-link-overlay svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .preview-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
     `,
   ],
 })
@@ -534,13 +614,15 @@ export class MatchDialogComponent implements OnChanges {
   private readonly electron = inject(ElectronService);
   protected readonly lang = inject(LanguageService);
 
-  @Input() file!: MediaFile;
-  @Output() closed = new EventEmitter<void>();
-  @Output() matched = new EventEmitter<{
+  readonly file = input.required<MediaFile>();
+  readonly suggestedName = input<string | undefined>();
+  readonly showQueueButton = input(true);
+  readonly closed = output<void>();
+  readonly matched = output<{
     metadata: TmdbMetadata;
     embedMetadata: boolean;
   }>();
-  @Output() addedToQueue = new EventEmitter<{
+  readonly addedToQueue = output<{
     metadata: TmdbMetadata;
     embedMetadata: boolean;
   }>();
@@ -558,33 +640,32 @@ export class MatchDialogComponent implements OnChanges {
 
   private readonly searchSubject = new Subject<string>();
 
-  constructor() {
-    // Set up debounced search
-    this.searchSubject
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        switchMap(async (query) => {
-          if (!query.trim()) {
-            return [];
-          }
-          this.isSearching.set(true);
-          try {
-            return await this.electron.searchTmdb(query);
-          } finally {
-            this.isSearching.set(false);
-          }
-        }),
-      )
-      .subscribe((results) => {
-        this.searchResults.set(results);
-      });
-  }
+  private readonly searchSubscription = this.searchSubject
+    .pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(async (query) => {
+        if (!query.trim()) {
+          return [];
+        }
+        this.isSearching.set(true);
+        try {
+          return await this.electron.searchTmdb(query);
+        } finally {
+          this.isSearching.set(false);
+        }
+      }),
+      takeUntilDestroyed(),
+    )
+    .subscribe((results) => {
+      this.searchResults.set(results);
+    });
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['file'] && this.file) {
-      // Pre-fill search with filename (cleaned up)
-      const cleanName = this.extractTitleFromFilename(this.file.filename);
+    if ((changes['file'] || changes['suggestedName']) && this.file()) {
+      // Pre-fill search with suggested name if available, otherwise filename
+      const sourceName = this.suggestedName() || this.file().filename;
+      const cleanName = this.extractTitleFromFilename(sourceName);
       this.searchQuery = cleanName;
       this.onSearchChange(cleanName);
     }
@@ -594,7 +675,7 @@ export class MatchDialogComponent implements OnChanges {
     const result = this.selectedResult();
     if (!result) return '';
 
-    const ext = this.file?.extension || '.mkv';
+    const ext = this.file()?.extension || '.mkv';
 
     if (result.type === 'tv') {
       const ep = this.episodeDetails();
@@ -611,6 +692,10 @@ export class MatchDialogComponent implements OnChanges {
     }
     return `${result.title}${ext}`;
   });
+
+  getTmdbUrl(result: TmdbMatchResult): string {
+    return `https://www.themoviedb.org/${result.type}/${result.id}`;
+  }
 
   readonly canConfirm = computed(() => {
     const result = this.selectedResult();

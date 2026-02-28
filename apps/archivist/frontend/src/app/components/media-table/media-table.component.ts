@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Confirmable } from '@medularity/angular/decorators';
 import { NotificationService } from '@medularity/angular/notifications';
+import { OmdbRating, TmdbRating } from '@medularity/archivist-core';
 import { LanguageService, TranslationKey } from '../../core/language.service';
 import { MediaStore } from '../../core/media.store';
 import { SettingsService } from '../../core/settings.service';
@@ -18,15 +19,33 @@ import { SettingsService } from '../../core/settings.service';
             <div class="scanning-indicator">
               <div class="spinner"></div>
               <p>{{ lang.translate('table.scanningMedia') }}</p>
+              <button class="scan-btn cancel" (click)="cancelNow()">
+                {{ lang.translate('scan.cancel') }}
+              </button>
             </div>
           } @else if (isLoading()) {
             <p>{{ lang.translate('table.loadingLibrary') }}</p>
           } @else {
-            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            <svg
+              class="empty-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+              />
             </svg>
             <h3>{{ lang.translate('table.noFiles') }}</h3>
-            <p>{{ lang.translate('table.scanToStart') }}</p>
+            @if (store.lastScanPath()) {
+              <p>{{ lang.translate('table.scanToStart') }}</p>
+              <button class="scan-btn" (click)="scanNow()">
+                {{ lang.translate('scan.folder') }}
+              </button>
+            } @else {
+              <p>{{ lang.translate('table.scanToStart') }}</p>
+            }
           }
         </div>
       } @else {
@@ -34,8 +53,8 @@ import { SettingsService } from '../../core/settings.service';
         @if (isRenaming()) {
           <div class="rename-dialog">
             <div class="rename-input-wrapper">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 [(ngModel)]="newName"
                 (keyup.enter)="confirmRename()"
                 (keyup.escape)="cancelRename()"
@@ -47,20 +66,28 @@ import { SettingsService } from '../../core/settings.service';
               }
             </div>
             @if (renameType() === 'file') {
-              <button class="action-btn" (click)="useFolderName()" [title]="lang.translate('action.useFolderNameHint')">
+              <button
+                class="action-btn"
+                (click)="useFolderName()"
+                [title]="lang.translate('action.useFolderNameHint')"
+              >
                 {{ lang.translate('action.useFolderName') }}
               </button>
             }
-            <button class="action-btn" (click)="confirmRename()">{{ lang.translate('action.save') }}</button>
-            <button class="action-btn" (click)="cancelRename()">{{ lang.translate('action.cancel') }}</button>
+            <button class="action-btn" (click)="confirmRename()">
+              {{ lang.translate('action.save') }}
+            </button>
+            <button class="action-btn" (click)="cancelRename()">
+              {{ lang.translate('action.cancel') }}
+            </button>
           </div>
         }
-        
+
         <!-- Table header -->
         <div class="table-header">
           <div class="col-checkbox">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               [checked]="allSelected()"
               [indeterminate]="someSelected()"
               (change)="toggleSelectAll()"
@@ -69,69 +96,89 @@ import { SettingsService } from '../../core/settings.service';
           <div class="col-filename" (click)="sortBy('filename')">
             {{ lang.translate('table.filename') }}
             @if (sortedBy() === 'filename') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-resolution" (click)="sortBy('resolution')">
             {{ lang.translate('table.resolution') }}
             @if (sortedBy() === 'resolution') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-rating" (click)="sortBy('rating')">
             Rating
             @if (sortedBy() === 'rating') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-audio">{{ lang.translate('table.audio') }}</div>
           <div class="col-duration" (click)="sortBy('duration')">
             {{ lang.translate('table.duration') }}
             @if (sortedBy() === 'duration') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-bitrate" (click)="sortBy('bitrate')">
             {{ lang.translate('table.bitrate') }}
             @if (sortedBy() === 'bitrate') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-size" (click)="sortBy('size')">
             {{ lang.translate('table.size') }}
             @if (sortedBy() === 'size') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
           <div class="col-modified" (click)="sortBy('modified')">
             {{ lang.translate('table.modified') }}
             @if (sortedBy() === 'modified') {
-              <span class="sort-icon">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+              <span class="sort-icon">{{
+                sortDir() === 'asc' ? '↑' : '↓'
+              }}</span>
             }
           </div>
         </div>
-        
+
         <!-- Table body -->
         <div class="table-body">
           @for (file of files(); track file.id) {
-            <div 
+            <div
               class="table-row"
               [class.selected]="isSelected(file.id)"
-              (click)="toggleSelection(file.id)">
+              (click)="toggleSelection(file.id)"
+            >
               <div class="col-checkbox" (click)="$event.stopPropagation()">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   [checked]="isSelected(file.id)"
                   (change)="toggleSelection(file.id)"
                 />
               </div>
               <div class="col-filename">
-                <span class="filename" [title]="file.path">{{ file.filename }}</span>
+                <span class="filename" [title]="file.path">{{
+                  file.filename
+                }}</span>
                 <span class="filepath">{{ truncatePath(file.directory) }}</span>
               </div>
               <div class="col-resolution">
                 @if (file.videoStreams[0]; as video) {
-                  <span class="badge" [class]="getResolutionClass(video.resolution)">
+                  <span
+                    class="badge"
+                    [class]="getResolutionClass(video.resolution)"
+                  >
                     {{ video.resolution }}
                   </span>
                   <span class="codec">{{ video.codec.toUpperCase() }}</span>
@@ -139,12 +186,15 @@ import { SettingsService } from '../../core/settings.service';
               </div>
               <div class="col-rating">
                 @if (getRating(file.filename); as rating) {
-                  @if (rating.notFound) {
-                    <span class="rating-not-found" [title]="'Not found: ' + rating.searchedTitle">
+                  @if ('notFound' in rating && rating.notFound) {
+                    <span
+                      class="rating-not-found"
+                      [title]="'Not found: ' + (rating.searchedTitle || '')"
+                    >
                       <span class="not-found-icon">?</span>
                     </span>
                   } @else {
-                    <span class="rating-badge" [title]="rating.Title + ' (' + rating.Year + ')'">
+                    <span class="rating-badge" [title]="getRatingTitle(rating)">
                       <span class="rating-star">★</span>
                       {{ getDisplayRating(rating) }}
                     </span>
@@ -152,7 +202,10 @@ import { SettingsService } from '../../core/settings.service';
                 }
               </div>
               <div class="col-audio">
-                @for (audio of file.audioStreams.slice(0, 2); track audio.index) {
+                @for (
+                  audio of file.audioStreams.slice(0, 2);
+                  track audio.index
+                ) {
                   <span class="audio-badge">
                     {{ audio.channelType }}
                     @if (audio.language) {
@@ -182,369 +235,410 @@ import { SettingsService } from '../../core/settings.service';
       }
     </div>
   `,
-  styles: [`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-    
-    .table-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-    
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-secondary);
-      gap: 0.5rem;
-    }
-    
-    .empty-icon {
-      width: 64px;
-      height: 64px;
-      opacity: 0.3;
-      margin-bottom: 1rem;
-    }
-    
-    .empty-state h3 {
-      font-size: 1.25rem;
-      color: var(--text-primary);
-      margin: 0;
-    }
-    
-    .empty-state p {
-      margin: 0;
-    }
-    
-    .scanning-indicator {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--bg-tertiary);
-      border-top-color: var(--accent-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .rename-dialog {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-color);
-    }
+  styles: [
+    `
+      :host {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        width: 100%;
+      }
 
-    .rename-input-wrapper {
-      display: flex;
-      align-items: center;
-      flex: 1;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    
-    .rename-input {
-      flex: 1;
-      padding: 0.5rem;
-      border: none;
-      background: transparent;
-      color: var(--text-primary);
-      font-size: 0.875rem;
-      min-width: 0;
-    }
+      .table-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        width: 100%;
+      }
 
-    .rename-input:focus {
-      outline: none;
-    }
+      .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-secondary);
+        gap: 0.5rem;
+        width: 100%;
+      }
 
-    .file-extension {
-      padding: 0.5rem 0.5rem 0.5rem 0;
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      white-space: nowrap;
-    }
-    
-    .table-header {
-      display: flex;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-color);
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-secondary);
-    }
-    
-    .table-header > div {
-      cursor: pointer;
-    }
-    
-    .table-header > div:hover {
-      color: var(--text-primary);
-    }
-    
-    .sort-icon {
-      margin-left: 0.25rem;
-    }
-    
-    .table-body {
-      flex: 1;
-      overflow-y: auto;
-    }
-    
-    .table-row {
-      display: flex;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--border-color);
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    
-    .table-row:hover {
-      background: var(--bg-hover);
-    }
-    
-    .table-row.selected {
-      background: var(--bg-selected);
-    }
-    
-    .col-checkbox {
-      width: 40px;
-      flex-shrink: 0;
-    }
-    
-    .col-checkbox input {
-      cursor: pointer;
-    }
-    
-    .col-filename {
-      flex: 1;
-      min-width: 200px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-      overflow: hidden;
-    }
-    
-    .filename {
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .filepath {
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .col-resolution {
-      width: 140px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+      .empty-icon {
+        width: 64px;
+        height: 64px;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+      }
 
-    .col-rating {
-      width: 80px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-    }
-    
-    .rating-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.125rem 0.375rem;
-      background: rgba(245, 197, 24, 0.15); /* IMDb yellow tint */
-      color: #f5c518;
-      border: 1px solid rgba(245, 197, 24, 0.3);
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.75rem;
-    }
-    
-    .rating-star {
-      font-size: 0.875rem;
-      line-height: 1;
-    }
+      .empty-state h3 {
+        font-size: 1.25rem;
+        color: var(--color-text-primary);
+        margin: 0;
+      }
 
-    .rating-not-found {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.125rem 0.375rem;
-      background: rgba(200, 200, 200, 0.15);
-      color: var(--text-tertiary);
-      border: 1px solid rgba(200, 200, 200, 0.3);
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: help;
-    }
+      .empty-state p {
+        margin: 0;
+      }
 
-    .not-found-icon {
-      font-size: 0.75rem;
-      font-weight: 600;
-      opacity: 0.7;
-    }
-    
-    .badge {
-      padding: 0.125rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    
-    .badge.res-4k {
-      background: #7c3aed;
-      color: white;
-    }
-    
-    .badge.res-1080p {
-      background: #2563eb;
-      color: white;
-    }
-    
-    .badge.res-720p {
-      background: #0891b2;
-      color: white;
-    }
-    
-    .badge.res-sd {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-    }
-    
-    .codec {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-    
-    .col-audio {
-      width: 180px;
-      flex-shrink: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-    }
-    
-    .audio-badge {
-      font-size: 0.75rem;
-      padding: 0.125rem 0.375rem;
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-      color: var(--text-secondary);
-    }
-    
-    .more {
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
-    }
-    
-    .col-duration {
-      width: 80px;
-      flex-shrink: 0;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-    
-    .col-bitrate {
-      width: 80px;
-      flex-shrink: 0;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-    
-    .col-size {
-      width: 80px;
-      flex-shrink: 0;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      text-align: right;
-    }
-    
-    .col-modified {
-      width: 100px;
-      flex-shrink: 0;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      text-align: right;
-    }
-  `],
+      .scanning-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--color-bg-tertiary);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .rename-dialog {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .rename-input-wrapper {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .rename-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        background: transparent;
+        color: var(--color-text-primary);
+        font-size: 0.875rem;
+        min-width: 0;
+      }
+
+      .rename-input:focus {
+        outline: none;
+      }
+
+      .file-extension {
+        padding: 0.5rem 0.5rem 0.5rem 0;
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+
+      .table-header {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-secondary);
+      }
+
+      .table-header > div {
+        cursor: pointer;
+      }
+
+      .table-header > div:hover {
+        color: var(--color-text-primary);
+      }
+
+      .sort-icon {
+        margin-left: 0.25rem;
+      }
+
+      .table-body {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      .table-row {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--color-border);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .table-row:hover {
+        background: var(--color-bg-tertiary);
+      }
+
+      .table-row.selected {
+        background: var(--color-bg-selected);
+      }
+
+      .col-checkbox {
+        width: 40px;
+        flex-shrink: 0;
+      }
+
+      .col-checkbox input {
+        cursor: pointer;
+      }
+
+      .col-filename {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        overflow: hidden;
+      }
+
+      .filename {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .filepath {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .col-resolution {
+        width: 140px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .col-rating {
+        width: 80px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .rating-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.125rem 0.375rem;
+        background: rgba(245, 197, 24, 0.15); /* IMDb yellow tint */
+        color: #f5c518;
+        border: 1px solid rgba(245, 197, 24, 0.3);
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.75rem;
+      }
+
+      .rating-star {
+        font-size: 0.875rem;
+        line-height: 1;
+      }
+
+      .rating-not-found {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.125rem 0.375rem;
+        background: rgba(200, 200, 200, 0.15);
+        color: var(--color-text-muted);
+        border: 1px solid rgba(200, 200, 200, 0.3);
+        border-radius: 4px;
+        font-size: 0.75rem;
+        cursor: help;
+      }
+
+      .not-found-icon {
+        font-size: 0.75rem;
+        font-weight: 600;
+        opacity: 0.7;
+      }
+
+      .badge {
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .badge.res-4k {
+        background: #7c3aed;
+        color: white;
+      }
+
+      .badge.res-1080p {
+        background: #2563eb;
+        color: white;
+      }
+
+      .badge.res-720p {
+        background: #0891b2;
+        color: white;
+      }
+
+      .badge.res-sd {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-secondary);
+      }
+
+      .codec {
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
+      }
+
+      .col-audio {
+        width: 180px;
+        flex-shrink: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      .audio-badge {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+        background: var(--color-bg-tertiary);
+        border-radius: 4px;
+        color: var(--color-text-secondary);
+      }
+
+      .more {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+      }
+
+      .col-duration {
+        width: 80px;
+        flex-shrink: 0;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+      }
+
+      .col-bitrate {
+        width: 80px;
+        flex-shrink: 0;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+      }
+
+      .col-size {
+        width: 80px;
+        flex-shrink: 0;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        text-align: right;
+      }
+
+      .col-modified {
+        width: 100px;
+        flex-shrink: 0;
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
+        text-align: right;
+      }
+
+      .scan-btn {
+        margin-top: 1rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .scan-btn.cancel {
+        background: var(--color-danger, #dc2626);
+      }
+
+      .scan-btn:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      .scan-btn:active {
+        transform: translateY(0);
+      }
+    `,
+  ],
 })
 export class MediaTableComponent {
-  private readonly store = inject(MediaStore);
+  protected readonly store = inject(MediaStore);
   private readonly settingsService = inject(SettingsService);
   private readonly notifications = inject(NotificationService);
-  protected readonly lang = inject(LanguageService);  
+  protected readonly lang = inject(LanguageService);
   readonly files = this.store.filteredFiles;
   readonly isScanning = this.store.isScanning;
   readonly isLoading = this.store.isLoading;
   readonly selectedIds = this.store.selectedIds;
   readonly selectedCount = this.store.selectedCount;
   readonly filters = this.store.filters;
-  
+
   readonly sortedBy = computed(() => this.filters().sortBy);
   readonly sortDir = computed(() => this.filters().sortDirection);
-  
+
   readonly allSelected = computed(() => {
     const files = this.files();
     const selected = this.selectedIds();
     return files.length > 0 && files.every((f) => selected.has(f.id));
   });
-  
+
   readonly someSelected = computed(() => {
     const files = this.files();
     const selected = this.selectedIds();
     const count = files.filter((f) => selected.has(f.id)).length;
     return count > 0 && count < files.length;
   });
-  
+
   readonly isRenaming = signal(false);
   readonly renameType = signal<'file' | 'folder'>('file');
   newName = '';
   fileExtension = '';
-  
 
-  
+  async scanNow(): Promise<void> {
+    const path = this.store.lastScanPath();
+    if (path) {
+      await this.store.scanDirectory(path, true);
+    }
+  }
+
+  cancelNow(): void {
+    this.store.cancelScan();
+  }
+
   isSelected(id: string): boolean {
     return this.selectedIds().has(id);
   }
-  
+
   toggleSelection(id: string): void {
     this.store.toggleSelection(id);
   }
-  
+
   toggleSelectAll(): void {
     if (this.allSelected()) {
       this.store.deselectAll();
@@ -552,45 +646,62 @@ export class MediaTableComponent {
       this.store.selectAll();
     }
   }
-  
+
   deselectAll(): void {
     this.store.deselectAll();
   }
-  
-  sortBy(column: 'filename' | 'size' | 'duration' | 'resolution' | 'bitrate' | 'rating' | 'modified'): void {
+
+  sortBy(
+    column:
+      | 'filename'
+      | 'size'
+      | 'duration'
+      | 'resolution'
+      | 'bitrate'
+      | 'modified'
+      | 'rating',
+  ): void {
     const current = this.filters();
-    const newDir = current.sortBy === column && current.sortDirection === 'asc' ? 'desc' : 'asc';
+    const newDir =
+      current.sortBy === column && current.sortDirection === 'asc'
+        ? 'desc'
+        : 'asc';
     this.store.updateFilters({ sortBy: column, sortDirection: newDir });
   }
-  
+
   async moveSelected(): Promise<void> {
-    const electron = (await import('../../core/electron.service')).ElectronService;
+    const electron = (await import('../../core/electron.service'))
+      .ElectronService;
     // This would need dependency injection, simplified for now
     // In real implementation, inject ElectronService and use selectDestination
   }
-  
+
   @Confirmable({
     header: 'Delete selected files?',
     message: 'This action cannot be undone.',
     positive: 'Delete',
-    negative: 'Cancel'
+    negative: 'Cancel',
   })
   async deleteSelected(): Promise<void> {
     // Get the parent folders BEFORE deleting files
     const selected = this.store.selectedFiles();
     const parentFolders = [...new Set(selected.map((f) => f.directory))];
-    
+
     // Delete files only (not parent folders yet)
     const result = await this.store.deleteSelected(false);
-    
+
     // Show notification
     if (result.successCount > 0) {
-      this.showNotification('notify.deleteSuccess', 'success', result.successCount);
+      this.showNotification(
+        'notify.deleteSuccess',
+        'success',
+        result.successCount,
+      );
     }
     if (result.errorCount > 0) {
       this.showNotification('notify.deleteError', 'danger');
     }
-    
+
     // Check if we should always delete enclosing folders
     if (this.settingsService.$alwaysDeleteEnclosingFolder()) {
       // Auto-delete folders without asking
@@ -606,7 +717,7 @@ export class MediaTableComponent {
     header: 'confirm.deleteSeason',
     message: 'confirm.deleteSeasonDesc',
     positive: 'action.deleteSeason',
-    negative: 'action.cancel'
+    negative: 'action.cancel',
   })
   async deleteSeason(): Promise<void> {
     const result = await this.store.deleteSeason([...this.selectedIds()]);
@@ -617,15 +728,16 @@ export class MediaTableComponent {
       this.showNotification('notify.deleteError', 'danger');
     }
   }
-  
+
   // Store folders pending deletion between confirmations
   private pendingFolderDeletion: string[] = [];
-  
+
   @Confirmable({
     header: 'Delete enclosing folder(s)?',
-    message: 'Do you want to also delete the parent folder(s) if they are now empty?',
+    message:
+      'Do you want to also delete the parent folder(s) if they are now empty?',
     positive: 'Yes, delete folders',
-    negative: 'No, keep folders'
+    negative: 'No, keep folders',
   })
   private async askToDeleteFolders(): Promise<void> {
     // This is called only if user confirms folder deletion
@@ -634,15 +746,15 @@ export class MediaTableComponent {
       this.pendingFolderDeletion = [];
     }
   }
-  
+
   async showInFinder(): Promise<void> {
     await this.store.showSelectedInFinder();
   }
-  
+
   openRenameDialog(): void {
     const selected = this.store.selectedFiles();
     if (selected.length !== 1) return;
-    
+
     const filename = selected[0].filename;
     const lastDotIndex = filename.lastIndexOf('.');
     if (lastDotIndex > 0) {
@@ -655,24 +767,24 @@ export class MediaTableComponent {
     this.renameType.set('file');
     this.isRenaming.set(true);
   }
-  
+
   openRenameFolderDialog(): void {
     const selected = this.store.selectedFiles();
     if (selected.length === 0) return;
-    
+
     const dir = selected[0].directory;
     const folderName = dir.substring(dir.lastIndexOf('/') + 1);
     this.newName = folderName;
     this.renameType.set('folder');
     this.isRenaming.set(true);
   }
-  
+
   async confirmRename(): Promise<void> {
     if (!this.newName.trim()) {
       this.cancelRename();
       return;
     }
-    
+
     let success = false;
     if (this.renameType() === 'file') {
       // Append the file extension back
@@ -681,35 +793,35 @@ export class MediaTableComponent {
     } else {
       success = await this.store.renameSelectedFolder(this.newName);
     }
-    
+
     if (success) {
       this.showNotification('notify.renameSuccess', 'success');
     } else {
       this.showNotification('notify.renameError', 'danger');
     }
-    
+
     this.cancelRename();
   }
-  
+
   cancelRename(): void {
     this.isRenaming.set(false);
     this.newName = '';
     this.fileExtension = '';
   }
-  
+
   useFolderName(): void {
     const selected = this.store.selectedFiles();
     if (selected.length !== 1) return;
-    
+
     const file = selected[0];
     const dir = file.directory;
     const folderName = dir.substring(dir.lastIndexOf('/') + 1);
-    
+
     // Extension is already stored in fileExtension, so just set the base name
     this.newName = folderName;
   }
-  
-  getRating(filename: string): import('../../core/electron.service').OmdbRating | undefined {
+
+  getRating(filename: string): OmdbRating | TmdbRating | undefined {
     return this.store.getRating(filename);
   }
 
@@ -721,31 +833,50 @@ export class MediaTableComponent {
   getDisplayRating(rating: unknown): string {
     // Type guard for rating object
     if (!rating || typeof rating !== 'object') return '--';
-    
+
     const ratingObj = rating as Record<string, unknown>;
-    
+
     // OMDB format - has imdbRating string
-    if ('imdbRating' in ratingObj && typeof ratingObj['imdbRating'] === 'string' && ratingObj['imdbRating']) {
+    if (
+      'imdbRating' in ratingObj &&
+      typeof ratingObj['imdbRating'] === 'string' &&
+      ratingObj['imdbRating']
+    ) {
       return ratingObj['imdbRating'];
     }
-    
+
     // TMDB format - has rating number
     if ('rating' in ratingObj && typeof ratingObj['rating'] === 'number') {
       return ratingObj['rating'].toFixed(1);
     }
-    
+
     return '--';
+  }
+
+  getRatingTitle(rating: any): string {
+    if (!rating) return '';
+    if ('Title' in rating) {
+      return `${rating.Title} (${rating.Year})`;
+    }
+    if ('title' in rating) {
+      return `${rating.title} (${rating.year})`;
+    }
+    return '';
   }
 
   getResolutionClass(resolution: string): string {
     switch (resolution) {
-      case '4K': return 'res-4k';
-      case '1080p': return 'res-1080p';
-      case '720p': return 'res-720p';
-      default: return 'res-sd';
+      case '4K':
+        return 'res-4k';
+      case '1080p':
+        return 'res-1080p';
+      case '720p':
+        return 'res-720p';
+      default:
+        return 'res-sd';
     }
   }
-  
+
   formatDuration(seconds?: number): string {
     if (!seconds) return '--:--';
     const h = Math.floor(seconds / 3600);
@@ -756,20 +887,20 @@ export class MediaTableComponent {
     }
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
-  
+
   formatSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
   }
-  
+
   formatBitrate(bitsPerSecond?: number): string {
     if (!bitsPerSecond) return '--';
     const mbps = bitsPerSecond / 1_000_000;
     return `${mbps.toFixed(1)} Mb`;
   }
-  
+
   formatDate(timestamp?: number): string {
     if (!timestamp) return '--';
     const date = new Date(timestamp);
@@ -779,31 +910,39 @@ export class MediaTableComponent {
       day: 'numeric',
     });
   }
-  
+
   formatLanguage(lang: string): string {
     const langMap: Record<string, string> = {
-      'eng': 'EN', 'en': 'EN',
-      'spa': 'ES', 'es': 'ES',
-      'fra': 'FR', 'fr': 'FR',
-      'deu': 'DE', 'de': 'DE',
-      'ita': 'IT', 'it': 'IT',
-      'jpn': 'JP', 'ja': 'JP',
-      'kor': 'KR', 'ko': 'KR',
-      'zho': 'ZH', 'zh': 'ZH',
+      eng: 'EN',
+      en: 'EN',
+      spa: 'ES',
+      es: 'ES',
+      fra: 'FR',
+      fr: 'FR',
+      deu: 'DE',
+      de: 'DE',
+      ita: 'IT',
+      it: 'IT',
+      jpn: 'JP',
+      ja: 'JP',
+      kor: 'KR',
+      ko: 'KR',
+      zho: 'ZH',
+      zh: 'ZH',
     };
     return langMap[lang.toLowerCase()] || lang.toUpperCase().slice(0, 2);
   }
-  
+
   truncatePath(path: string): string {
     const parts = path.split('/');
     if (parts.length <= 3) return path;
     return '.../' + parts.slice(-2).join('/');
   }
-  
+
   private showNotification(
-    key: TranslationKey, 
+    key: TranslationKey,
     type: 'success' | 'danger' | 'basic' = 'basic',
-    count?: number
+    count?: number,
   ): void {
     let message = this.lang.translate(key);
     if (count !== undefined) {

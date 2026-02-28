@@ -3,13 +3,15 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/archivist/electron/src",
   "projectType": "application",
+  "tags": ["scope:archivist"],
   "targets": {
     "build": {
       "dependsOn": [
         {
           "projects": ["archivist-frontend"],
           "target": "build"
-        }
+        },
+        "build-worker"
       ],
       "executor": "nx-electron:build",
       "outputs": ["{options.outputPath}"],
@@ -33,7 +35,22 @@
         }
       }
     },
+    "build-worker": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/archivist/workers",
+        "main": "apps/archivist/electron/src/app/workers/scanner.worker.ts",
+        "tsConfig": "apps/archivist/electron/tsconfig.app.json",
+        "platform": "node",
+        "bundle": true,
+        "thirdParty": true,
+        "format": ["cjs"],
+        "outputFileName": "scanner.worker.js"
+      }
+    },
     "serve": {
+      "dependsOn": ["build-worker"],
       "executor": "nx:run-commands",
       "options": {
         "commands": [

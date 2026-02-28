@@ -41,7 +41,7 @@ function getFFmpegPath(): string {
 
 export interface MediaMetadata {
   title: string;
-  year?: string;
+  year: string;
   description?: string;
   show?: string;
   season?: number;

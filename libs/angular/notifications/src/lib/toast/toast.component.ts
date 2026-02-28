@@ -1,44 +1,35 @@
-import { NgClass } from '@angular/common';
 import {
-  Component,
-  input,
-  OnDestroy,
-  OnInit,
-  output,
-  signal,
+    Component,
+    input,
+    OnDestroy,
+    OnInit,
+    output,
+    signal,
 } from '@angular/core';
 import { Notification } from '../notification.types';
 
 @Component({
   selector: 'lib-toast',
   standalone: true,
-  imports: [NgClass],
+  imports: [],
   template: `
     @let _notification = notification();
     <div
-      class="flex items-start w-full max-w-sm overflow-hidden bg-white rounded-lg shadow-md pointer-events-auto ring-1 ring-black ring-opacity-5 dark:bg-zinc-800 dark:ring-zinc-700 transition-all duration-300 ease-[cubic-bezier(0,0,0.2,1)] transform"
-      [class.opacity-0]="!isVisible() || _notification.closing"
-      [class.translate-y-4]="!isVisible() || _notification.closing"
-      [class.scale-95]="!isVisible() || _notification.closing"
-      [class.opacity-100]="isVisible() && !_notification.closing"
-      [class.translate-y-0]="isVisible() && !_notification.closing"
-      [class.scale-100]="isVisible() && !_notification.closing"
-      [ngClass]="{
-        border: true,
-        'border-l-4': true,
-        'border-blue-500': _notification.type === 'basic',
-        'border-green-500': _notification.type === 'success',
-        'border-red-500': _notification.type === 'danger',
-      }"
+      class="toast"
+      [class.toast-visible]="isVisible() && !_notification.closing"
+      [class.toast-hidden]="!isVisible() || _notification.closing"
+      [class.toast-basic]="_notification.type === 'basic'"
+      [class.toast-success]="_notification.type === 'success'"
+      [class.toast-danger]="_notification.type === 'danger'"
     >
-      <div class="p-4 flex-1">
-        <div class="flex items-start">
-          <div class="flex-shrink-0 pt-0.5">
+      <div class="toast-body">
+        <div class="toast-content">
+          <div class="toast-icon-wrapper">
             <!-- Icons -->
             @switch (_notification.type) {
               @case ('success') {
                 <svg
-                  class="w-5 h-5 text-green-500"
+                  class="toast-icon toast-icon-success"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -53,7 +44,7 @@ import { Notification } from '../notification.types';
               }
               @case ('danger') {
                 <svg
-                  class="w-5 h-5 text-red-500"
+                  class="toast-icon toast-icon-danger"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -68,7 +59,7 @@ import { Notification } from '../notification.types';
               }
               @case ('basic') {
                 <svg
-                  class="w-5 h-5 text-blue-500"
+                  class="toast-icon toast-icon-basic"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -83,25 +74,23 @@ import { Notification } from '../notification.types';
               }
             }
           </div>
-          <div class="ml-3 w-0 flex-1 pt-0.5">
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <div class="toast-message-wrapper">
+            <p class="toast-message">
               <span [innerHTML]="_notification.message"></span>
               @if (remainingSeconds() !== null) {
-                <span class="ml-1 text-xs text-gray-500 dark:text-gray-400"
-                  >({{ remainingSeconds() }}s)</span
-                >
+                <span class="toast-countdown">({{ remainingSeconds() }}s)</span>
               }
             </p>
           </div>
-          <div class="ml-4 flex-shrink-0 flex">
+          <div class="toast-close-wrapper">
             <button
               type="button"
               (click)="dismiss.emit(_notification.id)"
-              class="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:text-gray-500 dark:hover:text-gray-400"
+              class="toast-close-btn"
             >
               <span class="sr-only">Close</span>
               <svg
-                class="h-5 w-5"
+                class="toast-close-icon"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -119,6 +108,161 @@ import { Notification } from '../notification.types';
       </div>
     </div>
   `,
+  styles: `
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 24rem;
+      overflow: hidden;
+      background: var(--color-bg-primary, #fff);
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      pointer-events: auto;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-left-width: 4px;
+      transition: opacity 0.3s cubic-bezier(0, 0, 0.2, 1),
+                  transform 0.3s cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    :host-context(.dark) .toast {
+      background: var(--color-bg-secondary, #27272a);
+      border-color: var(--color-border, #3f3f46);
+    }
+
+    .toast-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .toast-hidden {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.95);
+    }
+
+    .toast-basic {
+      border-left-color: var(--color-info, #3b82f6);
+    }
+
+    .toast-success {
+      border-left-color: var(--color-success, #22c55e);
+    }
+
+    .toast-danger {
+      border-left-color: var(--color-danger, #ef4444);
+    }
+
+    .toast-body {
+      padding: 1rem;
+      flex: 1;
+    }
+
+    .toast-content {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .toast-icon-wrapper {
+      flex-shrink: 0;
+      padding-top: 0.125rem;
+    }
+
+    .toast-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .toast-icon-success {
+      color: var(--color-success, #22c55e);
+    }
+
+    .toast-icon-danger {
+      color: var(--color-danger, #ef4444);
+    }
+
+    .toast-icon-basic {
+      color: var(--color-info, #3b82f6);
+    }
+
+    .toast-message-wrapper {
+      margin-left: 0.75rem;
+      flex: 1;
+      min-width: 0;
+      padding-top: 0.125rem;
+    }
+
+    .toast-message {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-text-primary, #111827);
+      margin: 0;
+    }
+
+    :host-context(.dark) .toast-message {
+      color: var(--color-text-primary, #f3f4f6);
+    }
+
+    .toast-countdown {
+      margin-left: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-text-muted, #6b7280);
+    }
+
+    :host-context(.dark) .toast-countdown {
+      color: var(--color-text-muted, #9ca3af);
+    }
+
+    .toast-close-wrapper {
+      margin-left: 1rem;
+      flex-shrink: 0;
+      display: flex;
+    }
+
+    .toast-close-btn {
+      display: inline-flex;
+      background: transparent;
+      border: none;
+      border-radius: 0.375rem;
+      color: var(--color-text-muted, #9ca3af);
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+
+    .toast-close-btn:hover {
+      color: var(--color-text-secondary, #6b7280);
+    }
+
+    .toast-close-btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--color-primary, #3b82f6);
+    }
+
+    :host-context(.dark) .toast-close-btn {
+      color: var(--color-text-muted, #6b7280);
+    }
+
+    :host-context(.dark) .toast-close-btn:hover {
+      color: var(--color-text-secondary, #9ca3af);
+    }
+
+    .toast-close-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  `,
 })
 export class ToastComponent implements OnInit, OnDestroy {
   notification = input.required<Notification>();
@@ -126,9 +270,9 @@ export class ToastComponent implements OnInit, OnDestroy {
 
   isVisible = signal(false);
   remainingSeconds = signal<number | null>(null);
-  private timer: any;
+  private timer: ReturnType<typeof setInterval> | undefined;
 
-  ngOnInit() {
+  ngOnInit(): void {
     // Slight delay to allow render before transition
     requestAnimationFrame(() => {
       this.isVisible.set(true);
@@ -145,7 +289,7 @@ export class ToastComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     if (this.timer) {
       clearInterval(this.timer);
     }

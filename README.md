@@ -2,109 +2,90 @@
 
 A modern, cross-platform desktop application for managing and organizing your media library. Built with Electron and Angular, Archivist provides powerful tools for scanning, filtering, and maintaining your video collection.
 
+![AI Analysis Dashboard 2](./docs/images/ai2.png)
 
 ## Features
 
-**Filtering** - Filter by resolution, codec, audio tracks, bitrate, and more
+### 🧠 Intelligent AI Analysis
 
-![Demo1](./docs/images/demo1.png)
+Transform your media library with AI-powered curator tools.
+Use **local LLM** via ollama or provide your own api key for openai, claude, google sdks.
 
-**Rating Integration** - Fetch ratings and metadata from TMDB/OMDB automatically (provide your own API key)
-**Metadata Editing** - Edit and embed metadata directly into your files
+- **Smart Normalization**: Aggressive name normalization and conflict detection.
+- **Confidence Scoring**: Color-coded confidence scores for AI matches.
+- **TMDB Integration**: Automatic poster fetching and direct links to metadata sources (BYOK).
+- **Batch Processing**: High-performance, multi-threaded scanning worker.
+- **TV Series Organization**: Automated grouping of episodes into seasons with "Missing Episode" detection.
 
-![Demo2](./docs/images/demo2.png)
+![TV Series View](./docs/images/shows.png)
 
-**FFmpeg Integration** - Built-in FFmpeg support for media analysis and conversion
+![Series Details](./docs/images/shows2.png)
 
-![Demo3](./docs/images/demo3.png)
+![AI Analysis Dashboard 1](./docs/images/ai1.png)
 
-**Dark/Light Themes** - Beautiful UI with theme support
+### 🔍 Advanced Filtering & Sorting
 
-**Multi-language** - Internationalization support (for now eng, ger, swe)
+- **Rich Metadata**: Filter by resolution, codec, audio tracks, bitrate, and more.
+- **Incremental Scanning**: Local state persistence ensures only new files are processed.
+- **SQLite Caching**: High-speed database layer for instant library loading.
+- **Global Search**: Instant feedback as you type across your entire collection.
 
+![Filtering Interface](./docs/images/demo1.png)
 
-## Prerequisites
+### 🎬 Seamless Integration
 
-- [Bun](https://bun.sh/) (v1.0+)
-- [Node.js](https://nodejs.org/) (v20+)
-- [FFmpeg](https://ffmpeg.org/) (bundled automatically)
+- **VLC Playback**: Direct integration for launching files in VLC.
+- **System Explorer**: Locate files on disk.
+- **Metadata Embedding**: Edit and embed metadata directly into media files.
 
+![Matching Dialog](./docs/images/demo2.png)
 
-## Installation
+### 🌍 Internationalization
 
-> Always check the [build instructions](https://www.electronjs.org/docs/latest/development/build-instructions-gn) for your platform.
+Archivist is fully localized for:
 
-```bash
-# Clone the repository
-git clone https://github.com/blackfan23/archivist.git
-cd archivist
+- 🇺🇸 **English**
+- 🇸🇪 **Svenska**
+- 🇩🇪 **Deutsch**
 
-# Install dependencies
-bun install
-```
+---
 
-## Development
+### Building
 
-```bash
-# Start the development server
-bunx nx serve archivist
-```
+I provide versions for Windows and macOS for convenience. You can find the latest builds in the releases section. However, since I do not own a paid Apple Developer account, I cannot sign the application for macOS. You will need to sign the application yourself if you want to run it on macOS or bypass the security settings.
 
-This will launch the Electron app with hot-reload enabled for both the frontend and main process.
+You can build the application for different platforms using the following commands:
 
-## Building
-
-### macOS
-
-```bash
-# Apple Silicon (M1/M2/M3)
-bun run archivist:mac:arm64
-
-# Intel
-bun run archivist:mac
-```
-
-### Windows
+Intel Mac:
 
 ```bash
-bun run archivist:win
+bun archivist:mac
 ```
 
-### Linux
+Apple Silicon Mac:
 
 ```bash
-# x64
-bun run archivist:linux
-
-# ARM64
-bun run archivist:linux:arm64
+bun archivist:mac:arm64
 ```
 
-The built application will be available in `dist/executables/`.
+Windows:
 
-## Project Structure
-
+```bash
+bun archivist:win
 ```
-apps/archivist/
-├── electron/           # Electron main process
-│   └── src/
-│       ├── app/        # Main process logic
-│       │   ├── services/   # IPC handlers, storage, ffmpeg
-│       │   └── options/    # Build configuration
-│       └── main.ts     # Entry point
-└── frontend/           # Angular frontend
-    └── src/
-        ├── app/
-        │   ├── components/ # UI components
-        │   ├── core/       # Services and stores
-        │   └── shell/      # Main layout
-        └── styles.scss     # Global styles
+
+Linux:
+
+```bash
+bun archivist:linux
+```
+
+Linux ARM64:
+
+```bash
+bun archivist:linux:arm64
 ```
 
 ## License
 
 GNU GENERAL PUBLIC LICENSE v3.0
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.

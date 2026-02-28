@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaFile, TmdbMetadata } from '../../core/electron.service';
@@ -7,7 +7,7 @@ import { LanguageService } from '../../core/language.service';
 @Component({
   selector: 'app-metadata-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="overlay" (click)="close()">
       <div class="dialog" (click)="$event.stopPropagation()">
@@ -91,14 +91,14 @@ import { LanguageService } from '../../core/language.service';
     }
 
     .dialog {
-      background: var(--bg-secondary);
+      background: var(--color-bg-secondary);
       border-radius: 12px;
       width: 90%;
       max-width: 500px;
       display: flex;
       flex-direction: column;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--color-border);
     }
 
     .dialog-header {
@@ -106,19 +106,19 @@ import { LanguageService } from '../../core/language.service';
       align-items: center;
       justify-content: space-between;
       padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--color-border);
     }
 
     .dialog-header h2 {
       margin: 0;
       font-size: 1.25rem;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
     }
 
     .close-btn {
       background: none;
       border: none;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       font-size: 1.5rem;
       cursor: pointer;
       padding: 0;
@@ -131,8 +131,8 @@ import { LanguageService } from '../../core/language.service';
     }
 
     .close-btn:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
 
     .dialog-body {
@@ -150,7 +150,7 @@ import { LanguageService } from '../../core/language.service';
 
     .form-group label {
       font-size: 0.875rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       font-weight: 500;
     }
 
@@ -168,24 +168,24 @@ import { LanguageService } from '../../core/language.service';
     }
 
     input, textarea {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
       border-radius: 6px;
       padding: 0.75rem;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
       font-size: 0.9375rem;
       transition: all 0.2s ease;
     }
 
     input:focus, textarea:focus {
       outline: none;
-      border-color: var(--accent-color);
+      border-color: var(--color-primary);
       box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.1);
     }
 
     .dialog-footer {
       padding: 1rem 1.5rem;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid var(--color-border);
       display: flex;
       justify-content: flex-end;
       gap: 1rem;
@@ -202,17 +202,17 @@ import { LanguageService } from '../../core/language.service';
     }
 
     .btn.secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-secondary);
     }
 
     .btn.secondary:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
 
     .btn.primary {
-      background: var(--accent-color);
+      background: var(--color-primary);
       color: white;
     }
 
@@ -230,17 +230,17 @@ import { LanguageService } from '../../core/language.service';
       align-items: center;
       gap: 0.5rem;
       cursor: pointer;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       padding: 0.5rem 1rem;
       border-radius: 6px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
     }
     
     .radio-group label.active {
       background: rgba(var(--accent-color-rgb), 0.1);
-      border-color: var(--accent-color);
-      color: var(--accent-color);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
     }
     
     .radio-group input {

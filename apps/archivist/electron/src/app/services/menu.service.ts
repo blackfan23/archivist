@@ -3,6 +3,7 @@
  * File actions send IPC messages to the renderer for handling
  */
 
+import { IPC_CHANNELS } from '@medularity/archivist-core';
 import { app, BrowserWindow, Menu, MenuItemConstructorOptions } from 'electron';
 import App from '../app';
 
@@ -38,9 +39,7 @@ export function createApplicationMenu(mainWindow: BrowserWindow): void {
     // File menu
     {
       label: 'File',
-      submenu: [
-        isMac ? { role: 'close' as const } : { role: 'quit' as const },
-      ],
+      submenu: [isMac ? { role: 'close' as const } : { role: 'quit' as const }],
     },
 
     // Edit menu
@@ -74,11 +73,7 @@ export function createApplicationMenu(mainWindow: BrowserWindow): void {
         { role: 'reload' as const },
         { role: 'forceReload' as const },
         // Only show toggle dev tools in development mode
-        ...(isDev
-          ? [
-              { role: 'toggleDevTools' as const },
-            ]
-          : []),
+        ...(isDev ? [{ role: 'toggleDevTools' as const }] : []),
         { type: 'separator' as const },
         { role: 'resetZoom' as const },
         { role: 'zoomIn' as const },
@@ -144,7 +139,10 @@ export function updateFileMenuForSelection(
             label: 'Show in Finder',
             accelerator: 'CmdOrCtrl+Shift+R',
             click: () => {
-              mainWindow.webContents.send('menu-action', 'show-in-finder');
+              mainWindow.webContents.send(
+                IPC_CHANNELS.MENU_ACTION,
+                'show-in-finder',
+              );
             },
           },
           { type: 'separator' as const },
@@ -158,27 +156,36 @@ export function updateFileMenuForSelection(
             label: 'Edit in FFmpeg Editor',
             accelerator: 'CmdOrCtrl+E',
             click: () => {
-              mainWindow.webContents.send('menu-action', 'edit');
+              mainWindow.webContents.send(IPC_CHANNELS.MENU_ACTION, 'edit');
             },
           },
           { type: 'separator' as const },
           {
             label: 'Requery Rating',
             click: () => {
-              mainWindow.webContents.send('menu-action', 'requery-rating');
+              mainWindow.webContents.send(
+                IPC_CHANNELS.MENU_ACTION,
+                'requery-rating',
+              );
             },
           },
           {
             label: 'Match to TMDB',
             accelerator: 'CmdOrCtrl+M',
             click: () => {
-              mainWindow.webContents.send('menu-action', 'match-tmdb');
+              mainWindow.webContents.send(
+                IPC_CHANNELS.MENU_ACTION,
+                'match-tmdb',
+              );
             },
           },
           {
             label: 'Write Metadata',
             click: () => {
-              mainWindow.webContents.send('menu-action', 'write-metadata');
+              mainWindow.webContents.send(
+                IPC_CHANNELS.MENU_ACTION,
+                'write-metadata',
+              );
             },
           },
           { type: 'separator' as const },
@@ -186,9 +193,7 @@ export function updateFileMenuForSelection(
       : []),
 
     // Standard file menu items
-    isMac
-      ? { role: 'close' as const }
-      : { role: 'quit' as const },
+    isMac ? { role: 'close' as const } : { role: 'quit' as const },
   ];
 
   const template: MenuItemConstructorOptions[] = [
@@ -249,11 +254,7 @@ export function updateFileMenuForSelection(
         { role: 'reload' as const },
         { role: 'forceReload' as const },
         // Only show toggle dev tools in development mode
-        ...(isDev
-          ? [
-              { role: 'toggleDevTools' as const },
-            ]
-          : []),
+        ...(isDev ? [{ role: 'toggleDevTools' as const }] : []),
         { type: 'separator' as const },
         { role: 'resetZoom' as const },
         { role: 'zoomIn' as const },

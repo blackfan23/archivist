@@ -320,14 +320,14 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         margin: 0;
       }
 
       .selection-count {
         font-size: 1.5rem;
         font-weight: 600;
-        color: var(--accent-color);
+        color: var(--color-primary);
       }
 
       .action-sections {
@@ -342,7 +342,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         flex-direction: column;
         gap: 0.375rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--color-border);
       }
 
       .action-section:last-child {
@@ -355,10 +355,10 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         gap: 0.75rem;
         width: 100%;
         padding: 0.625rem 0.75rem;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
         border-radius: 6px;
-        color: var(--text-primary);
+        color: var(--color-text-primary);
         font-size: 0.875rem;
         cursor: pointer;
         transition: all 0.15s ease;
@@ -366,19 +366,19 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
       }
 
       .action-btn:hover {
-        background: var(--bg-hover);
-        border-color: var(--accent-color);
+        background: var(--color-bg-tertiary);
+        border-color: var(--color-primary);
       }
 
       .action-btn svg {
         width: 18px;
         height: 18px;
         flex-shrink: 0;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
       }
 
       .action-btn:hover svg {
-        color: var(--accent-color);
+        color: var(--color-primary);
       }
 
       .action-btn.danger {
@@ -407,8 +407,8 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
       .rename-input-wrapper {
         display: flex;
         align-items: center;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--accent-color);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-primary);
         border-radius: 6px;
         overflow: hidden;
       }
@@ -418,7 +418,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         padding: 0.5rem 0.75rem;
         background: transparent;
         border: none;
-        color: var(--text-primary);
+        color: var(--color-text-primary);
         font-size: 0.875rem;
         min-width: 0;
       }
@@ -429,7 +429,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
 
       .file-extension {
         padding: 0.5rem 0.75rem 0.5rem 0;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         font-size: 0.875rem;
         white-space: nowrap;
       }
@@ -444,18 +444,18 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         align-items: center;
         justify-content: center;
         padding: 0.5rem;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
         border-radius: 6px;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         cursor: pointer;
         transition: all 0.15s ease;
       }
 
       .action-btn-small:hover {
-        background: var(--bg-hover);
-        color: var(--accent-color);
-        border-color: var(--accent-color);
+        background: var(--color-bg-tertiary);
+        color: var(--color-primary);
+        border-color: var(--color-primary);
       }
 
       .action-btn-small svg {
@@ -466,7 +466,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
       .selection-footer {
         margin-top: auto;
         padding-top: 1rem;
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--color-border);
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -480,17 +480,17 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         width: 100%;
         padding: 0.5rem 0.75rem;
         background: transparent;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--color-border);
         border-radius: 6px;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         font-size: 0.875rem;
         cursor: pointer;
         transition: all 0.15s ease;
       }
 
       .clear-btn:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
       }
 
       .clear-btn svg {
@@ -502,7 +502,7 @@ import { MetadataDialogComponent } from '../metadata-dialog/metadata-dialog.comp
         display: flex;
         justify-content: center;
         font-size: 0.75rem;
-        color: var(--text-tertiary);
+        color: var(--color-text-muted);
       }
     `,
   ],

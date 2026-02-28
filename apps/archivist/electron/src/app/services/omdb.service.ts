@@ -6,7 +6,9 @@ export class OmdbService {
   /**
    * Validate an API key by making a test query
    */
-  static async validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+  static async validateApiKey(
+    apiKey: string,
+  ): Promise<{ valid: boolean; error?: string }> {
     if (!apiKey || !apiKey.trim()) {
       return { valid: false, error: 'API key is empty' };
     }
@@ -47,8 +49,7 @@ export class OmdbService {
     year?: string,
   ): Promise<OmdbRating | null> {
     if (!apiKey) {
-      console.warn('OMDB API fetch skipped: No API key provided');
-      return null;
+      throw new Error('MISSING_API_KEY');
     }
 
     try {

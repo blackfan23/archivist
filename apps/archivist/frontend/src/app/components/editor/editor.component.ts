@@ -246,7 +246,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       text-decoration: none;
       font-size: 0.875rem;
       padding: 0.5rem 1rem;
@@ -255,8 +255,8 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     }
 
     .back-btn:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
 
     .back-btn svg {
@@ -267,12 +267,12 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     .loading-state, .error-state {
       text-align: center;
       padding: 3rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
     }
 
     .file-info {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
       padding: 1.25rem;
       margin-bottom: 1.5rem;
@@ -287,7 +287,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
 
     .file-path {
       font-size: 0.8125rem;
-      color: var(--text-tertiary);
+      color: var(--color-text-muted);
       margin: 0 0 0.75rem 0;
       word-break: break-all;
     }
@@ -299,8 +299,8 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     }
 
     .tag {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-secondary);
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
       font-size: 0.75rem;
@@ -308,8 +308,8 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     }
 
     .progress-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
       padding: 1rem;
       margin-bottom: 1rem;
@@ -317,14 +317,14 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
 
     .progress-bar {
       height: 8px;
-      background: var(--bg-tertiary);
+      background: var(--color-bg-tertiary);
       border-radius: 4px;
       overflow: hidden;
     }
 
     .progress-fill {
       height: 100%;
-      background: var(--accent-color);
+      background: var(--color-primary);
       transition: width 0.3s ease;
     }
 
@@ -332,7 +332,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
       display: flex;
       justify-content: space-between;
       font-size: 0.75rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       margin-top: 0.5rem;
     }
 
@@ -391,8 +391,8 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     .panel {
       display: flex;
       flex-direction: column;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
       padding: 1.25rem;
     }
@@ -409,7 +409,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
 
     .panel-desc {
       font-size: 0.8125rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       margin: 0 0 1rem 0;
     }
 
@@ -426,22 +426,22 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
 
     .panel-controls label {
       font-size: 0.8125rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       margin-bottom: -0.5rem;
     }
 
     .select, .textarea {
       padding: 0.5rem 0.75rem;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
       border-radius: 6px;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
       font-size: 0.875rem;
     }
 
     .select:focus, .textarea:focus {
       outline: none;
-      border-color: var(--accent-color);
+      border-color: var(--color-primary);
     }
 
     .textarea {
@@ -471,7 +471,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     }
 
     .btn.primary {
-      background: var(--accent-color);
+      background: var(--color-primary);
       color: white;
     }
 
@@ -480,13 +480,13 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
     }
 
     .btn.secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
     }
 
     .btn.secondary:hover:not(:disabled) {
-      background: var(--bg-hover);
+      background: var(--color-bg-tertiary);
     }
 
     .btn.small {
@@ -515,7 +515,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
       justify-content: space-between;
       align-items: center;
       padding: 0.5rem;
-      background: var(--bg-tertiary);
+      background: var(--color-bg-tertiary);
       border-radius: 4px;
       font-size: 0.8125rem;
     }
@@ -527,7 +527,7 @@ type OperationStatus = 'idle' | 'processing' | 'success' | 'error';
 
     .no-subs {
       font-size: 0.8125rem;
-      color: var(--text-tertiary);
+      color: var(--color-text-muted);
       font-style: italic;
       margin: 0 0 1rem 0;
     }

@@ -33,6 +33,10 @@ export default [
               onlyDependOnLibsWithTags: ['scope:api', 'scope:shared'],
             },
             {
+              sourceTag: 'scope:archivist',
+              onlyDependOnLibsWithTags: ['scope:archivist', 'scope:shared'],
+            },
+            {
               sourceTag: 'type:data',
               onlyDependOnLibsWithTags: ['type:data'],
             },

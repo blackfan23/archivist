@@ -132,13 +132,13 @@ import { MediaStore } from '../../core/media.store';
     }
     
     .progress-text {
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
     }
     
     .error-count-btn {
       background: none;
       border: none;
-      color: var(--error-color);
+      color: var(--color-danger);
       cursor: pointer;
       font-size: inherit;
       padding: 0;
@@ -151,14 +151,14 @@ import { MediaStore } from '../../core/media.store';
     
     .progress-bar {
       height: 6px;
-      background: var(--bg-tertiary);
+      background: var(--color-bg-tertiary);
       border-radius: 3px;
       overflow: hidden;
     }
     
     .progress-fill {
       height: 100%;
-      background: var(--accent-color);
+      background: var(--color-primary);
       transition: width 0.2s ease;
     }
     
@@ -166,7 +166,7 @@ import { MediaStore } from '../../core/media.store';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       font-size: 0.875rem;
     }
     
@@ -189,7 +189,7 @@ import { MediaStore } from '../../core/media.store';
     }
     
     .stats {
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       font-size: 0.875rem;
     }
     
@@ -212,25 +212,25 @@ import { MediaStore } from '../../core/media.store';
     }
     
     .btn-primary {
-      background: var(--accent-color);
+      background: var(--color-primary);
       color: white;
     }
     
     .btn-primary:hover {
-      background: var(--accent-hover);
+      background: var(--color-primary-dark);
     }
     
     .btn-secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
     
     .btn-secondary:hover {
-      background: var(--bg-hover);
+      background: var(--color-bg-tertiary);
     }
     
     .btn-danger {
-      background: var(--error-color);
+      background: var(--color-danger);
       color: white;
     }
     
@@ -249,7 +249,7 @@ import { MediaStore } from '../../core/media.store';
     }
     
     .error-panel {
-      background: var(--bg-secondary);
+      background: var(--color-bg-secondary);
       border-radius: 8px;
       width: 90%;
       max-width: 600px;
@@ -264,13 +264,13 @@ import { MediaStore } from '../../core/media.store';
       justify-content: space-between;
       align-items: center;
       padding: 1rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--color-border);
     }
     
     .error-panel-header h3 {
       margin: 0;
       font-size: 1rem;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
     }
     
     .close-btn {
@@ -278,12 +278,12 @@ import { MediaStore } from '../../core/media.store';
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       padding: 0 0.5rem;
     }
     
     .close-btn:hover {
-      color: var(--text-primary);
+      color: var(--color-text-primary);
     }
     
     .error-panel-body {
@@ -296,7 +296,7 @@ import { MediaStore } from '../../core/media.store';
       align-items: center;
       gap: 1rem;
       padding: 0.75rem;
-      background: var(--bg-tertiary);
+      background: var(--color-bg-tertiary);
       border-radius: 4px;
       margin-bottom: 0.5rem;
     }
@@ -315,7 +315,7 @@ import { MediaStore } from '../../core/media.store';
     
     .error-path {
       font-weight: 500;
-      color: var(--text-primary);
+      color: var(--color-text-primary);
       font-size: 0.875rem;
       white-space: nowrap;
       overflow: hidden;
@@ -323,14 +323,14 @@ import { MediaStore } from '../../core/media.store';
     }
     
     .error-message {
-      color: var(--error-color);
+      color: var(--color-danger);
       font-size: 0.75rem;
     }
 
     .open-folder-btn {
       background: none;
       border: none;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
       cursor: pointer;
       padding: 0.5rem;
       border-radius: 4px;
@@ -341,8 +341,8 @@ import { MediaStore } from '../../core/media.store';
     }
 
     .open-folder-btn:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
     }
 
     .open-folder-btn svg {
@@ -352,7 +352,7 @@ import { MediaStore } from '../../core/media.store';
     
     .no-errors {
       text-align: center;
-      color: var(--text-secondary);
+      color: var(--color-text-secondary);
     }
   `],
 })

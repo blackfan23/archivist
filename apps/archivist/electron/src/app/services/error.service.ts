@@ -1,14 +1,5 @@
+import { BackendError, IPC_CHANNELS } from '@medularity/archivist-core';
 import { BrowserWindow } from 'electron';
-
-export interface BackendError {
-  id: string;
-  timestamp: number;
-  operation: string;
-  message: string;
-  path?: string;
-  code?: string;
-  details?: unknown;
-}
 
 class ErrorServiceImpl {
   private errors: BackendError[] = [];
@@ -22,13 +13,9 @@ class ErrorServiceImpl {
   /**
    * Log an error and emit it to the frontend
    */
-  logError(
-    operation: string,
-    error: unknown,
-    path?: string
-  ): BackendError {
+  logError(operation: string, error: unknown, path?: string): BackendError {
     const errorObj = this.parseError(error);
-    
+
     const backendError: BackendError = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
@@ -41,7 +28,7 @@ class ErrorServiceImpl {
 
     // Add to error log
     this.errors.push(backendError);
-    
+
     // Trim to max size
     if (this.errors.length > this.MAX_ERRORS) {
       this.errors = this.errors.slice(-this.MAX_ERRORS);
@@ -75,14 +62,18 @@ class ErrorServiceImpl {
    */
   private emitError(error: BackendError): void {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      this.mainWindow.webContents.send('backend-error', error);
+      this.mainWindow.webContents.send(IPC_CHANNELS.BACKEND_ERROR, error);
     }
   }
 
   /**
    * Parse error object to extract useful info
    */
-  private parseError(error: unknown): { message: string; code?: string; details?: unknown } {
+  private parseError(error: unknown): {
+    message: string;
+    code?: string;
+    details?: unknown;
+  } {
     if (error instanceof Error) {
       const nodeError = error as NodeJS.ErrnoException;
       return {
@@ -95,11 +86,11 @@ class ErrorServiceImpl {
         },
       };
     }
-    
+
     if (typeof error === 'string') {
       return { message: error };
     }
-    
+
     return { message: String(error), details: error };
   }
 }
