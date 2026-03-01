@@ -46,6 +46,7 @@ jobs:
 
       - name: Extract Version
         id: get_version
+        shell: bash
         run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
 
       - name: Build and Package Archivist
