@@ -57,7 +57,8 @@ Archivist supports running AI analysis completely locally and privately using **
 ### How to set it up:
 
 1. **Install Ollama**: Download and install Ollama from [ollama.com](https://ollama.com/).
-2. **Download a Model**: Open archivist settings and select the **Local (Ollama)** AI provider, and choose your downloaded model from the dropdown. Make sure Ollama is running in the background. Models are downloaded automatically but can be large files. Check the [ollama](https://ollama.com/models) website for available models.
+
+2. **Download a Model**: Open archivist settings and select the **Local (Ollama)** AI provider, and choose your downloaded model from the dropdown. Make sure Ollama is running in the background. Models are downloaded automatically but can be large files. Check the [Ollama Models](https://ollama.com/models) website for available models.
 
 ---
 
