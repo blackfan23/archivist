@@ -58,7 +58,7 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           name: Release v${{ env.VERSION }}
-          generate_release_notes: true
+          body_path: CHANGELOG.md
           fail_on_unmatched_files: false
           files: |
             dist/executables/**/*-windows-*.exe
