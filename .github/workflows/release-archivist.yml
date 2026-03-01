@@ -58,13 +58,12 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: Release v${{ env.VERSION }}
           generate_release_notes: true
+          fail_on_unmatched_files: false
           files: |
-            dist/executables/**/*.exe
-            !dist/executables/**/ffmpeg.exe
-            !dist/executables/**/ffprobe.exe
-            dist/executables/**/*.dmg
-            dist/executables/**/*.AppImage
-            dist/executables/**/*.zip
+            dist/executables/**/*-windows-*.exe
+            dist/executables/**/*-mac-*.dmg
+            dist/executables/**/*-mac-*.zip
+            dist/executables/**/*-linux-*.AppImage
             dist/executables/**/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
