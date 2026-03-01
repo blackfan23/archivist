@@ -5,7 +5,7 @@
     "url": "https://github.com/blackfan23"
   },
   "private": false,
-  "version": "2.0.7",
+  "version": "2.0.8",
   "license": "GNU General Public License v3.0",
   "scripts": {
     "archivist:extract": "bun scripts/extract-archivist.ts ~/Developer/archivist",
