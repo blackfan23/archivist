@@ -1,11 +1,17 @@
 import {
   Component,
-  computed,
-  inject,
   OnInit,
+  computed,
+  effect,
+  inject,
   output,
   signal,
+  untracked,
 } from '@angular/core';
+import {
+  AiModelLabels,
+  AiModelSelectorComponent,
+} from '@medularity/angular/ai-model-selector';
 import {
   ElectronService,
   RatingProvider,
@@ -23,7 +29,7 @@ type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [],
+  imports: [AiModelSelectorComponent],
   template: `
     <div class="settings-overlay" (click)="close.emit()"></div>
     <div class="settings-panel">
@@ -159,94 +165,18 @@ type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid';
         <section class="settings-section">
           <h3>{{ lang.translate('settings.aiConfig') }}</h3>
 
-          <!-- AI Provider -->
-          <div class="setting-row">
-            <div class="setting-label">
-              <span>{{ lang.translate('settings.provider') }}</span>
-              <span class="setting-description">
-                {{ lang.translate('settings.providerDesc') }}</span
-              >
-            </div>
-            <select
-              class="setting-select"
-              (change)="onAiProviderChange($event)"
-            >
-              <option
-                value="none"
-                [selected]="settings.$aiProvider() === 'none'"
-              >
-                {{ lang.translate('settings.providerNone') }}
-              </option>
-              <option
-                value="ollama"
-                [selected]="settings.$aiProvider() === 'ollama'"
-              >
-                {{ lang.translate('settings.providerOllama') }}
-              </option>
-              <option
-                value="openai"
-                [selected]="settings.$aiProvider() === 'openai'"
-              >
-                {{ lang.translate('settings.providerOpenai') }}
-              </option>
-              <option
-                value="claude"
-                [selected]="settings.$aiProvider() === 'claude'"
-              >
-                {{ lang.translate('settings.providerClaude') }}
-              </option>
-              <option
-                value="gemini"
-                [selected]="settings.$aiProvider() === 'gemini'"
-              >
-                {{ lang.translate('settings.providerGemini') }}
-              </option>
-            </select>
-          </div>
-
-          @if (settings.$aiProvider() === 'ollama') {
-            <!-- Ollama URL -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.ollamaUrl') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="text"
-                [value]="settings.$ollamaUrl()"
-                (change)="onOllamaUrlChange($event)"
-                placeholder="http://localhost:11434"
-              />
-            </div>
-
-            <!-- Ollama Model -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.model') }}</span>
-              </div>
-              @if (ollamaModels().length > 0) {
-                <select
-                  class="setting-select"
-                  (change)="onOllamaModelChange($event)"
-                >
-                  @for (model of ollamaModels(); track model) {
-                    <option
-                      [value]="model"
-                      [selected]="settings.$ollamaModel() === model"
-                    >
-                      {{ model }}
-                    </option>
-                  }
-                </select>
-              } @else {
-                <div class="loading-models">
-                  {{ lang.translate('settings.loadingModels') }}
-                </div>
-              }
-            </div>
-
-            <!-- Recommended Model -->
-            <div class="recommendation-box">
+          <lib-ai-model-selector
+            [(settings)]="aiSettings"
+            [labels]="aiLabels()"
+            [availableModels]="ollamaModels()"
+            [testing]="connectionState() === 'validating'"
+            [connectionStatus]="connectionState()"
+            [connectionError]="connectionError()"
+            (onTestConnection)="testConnection()"
+            (onRefreshModels)="loadModels()"
+          >
+            <!-- Recommended Model in ollama-extra slot -->
+            <div ollama-extra class="recommendation-box">
               <div class="rec-info">
                 <div class="rec-header">
                   <i class="ph ph-sparkle"></i>
@@ -277,129 +207,7 @@ type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid';
                 </div>
               }
             </div>
-          }
-
-          @if (settings.$aiProvider() === 'openai') {
-            <!-- OpenAI Key -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.apiKey') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="password"
-                [value]="settings.$openaiApiKey()"
-                (input)="onOpenAiKeyInput($event)"
-                placeholder="sk-..."
-              />
-            </div>
-            <!-- OpenAI Model -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.model') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="text"
-                [value]="settings.$openaiModel()"
-                (change)="onOpenAiModelChange($event)"
-                placeholder="gpt-4-turbo"
-              />
-            </div>
-          }
-
-          @if (settings.$aiProvider() === 'claude') {
-            <!-- Claude Key -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.apiKey') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="password"
-                [value]="settings.$claudeApiKey()"
-                (input)="onClaudeKeyInput($event)"
-                placeholder="sk-ant-..."
-              />
-            </div>
-            <!-- Claude Model -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.model') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="text"
-                [value]="settings.$claudeModel()"
-                (change)="onClaudeModelChange($event)"
-                placeholder="claude-3-opus-..."
-              />
-            </div>
-          }
-
-          @if (settings.$aiProvider() === 'gemini') {
-            <!-- Gemini Key -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.apiKey') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="password"
-                [value]="settings.$geminiApiKey()"
-                (input)="onGeminiKeyInput($event)"
-                placeholder="AIza..."
-              />
-            </div>
-            <!-- Gemini Model -->
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.model') }}</span>
-              </div>
-              <input
-                class="setting-input"
-                type="text"
-                [value]="settings.$geminiModel()"
-                (change)="onGeminiModelChange($event)"
-                placeholder="gemini-1.5-pro"
-              />
-            </div>
-          }
-
-          <!-- Connection Test -->
-          @if (settings.$aiProvider() !== 'none') {
-            <div class="setting-row">
-              <div class="setting-label">
-                <span>{{ lang.translate('settings.connectionStatus') }}</span>
-              </div>
-              <div class="connection-actions">
-                <button
-                  class="test-btn"
-                  (click)="testConnection()"
-                  [disabled]="connectionState() === 'validating'"
-                >
-                  @if (connectionState() === 'validating') {
-                    {{ lang.translate('settings.testing') }}
-                  } @else {
-                    {{ lang.translate('settings.testConnection') }}
-                  }
-                </button>
-                @if (connectionState() === 'valid') {
-                  <span class="status-text valid"
-                    >✓ {{ lang.translate('settings.connected') }}</span
-                  >
-                }
-                @if (connectionState() === 'invalid') {
-                  <span class="status-text invalid"
-                    >✗ {{ lang.translate('settings.failed') }}</span
-                  >
-                }
-              </div>
-            </div>
-            @if (connectionError()) {
-              <div class="key-error">{{ connectionError() }}</div>
-            }
-          }
+          </lib-ai-model-selector>
         </section>
 
         <!-- Integrations Section -->
@@ -1040,10 +848,47 @@ export class SettingsComponent implements OnInit {
   readonly tmdbKeyState = signal<ValidationState>('idle');
   readonly tmdbKeyError = signal<string>('');
 
-  // AI State
-  readonly ollamaModels = signal<string[]>([]);
+  // AI
+  ollamaModels = signal<string[]>([]);
   readonly connectionState = signal<ValidationState>('idle');
   readonly connectionError = signal<string>('');
+
+  aiLabels = computed<AiModelLabels>(() => ({
+    provider: this.lang.translate('settings.provider'),
+    providerDesc: this.lang.translate('settings.providerDesc'),
+    providerNone: this.lang.translate('settings.providerNone'),
+    providerOllama: this.lang.translate('settings.providerOllama'),
+    providerOpenai: this.lang.translate('settings.providerOpenai'),
+    providerClaude: this.lang.translate('settings.providerClaude'),
+    providerGemini: this.lang.translate('settings.providerGemini'),
+    ollamaUrl: this.lang.translate('settings.ollamaUrl'),
+    model: this.lang.translate('settings.model'),
+    apiKey: this.lang.translate('settings.apiKey'),
+    testConnection: this.lang.translate('settings.testConnection'),
+    testing: this.lang.translate('settings.testing'),
+    connectionStatus: this.lang.translate('settings.connectionStatus'),
+    connected: this.lang.translate('settings.connected'),
+    failed: this.lang.translate('settings.failed'),
+    refresh: this.lang.translate('scan.rescan'),
+  }));
+
+  appSettings = { ...this.settings.settings() };
+  aiSettings = signal({ ...(this.settings.aiSettings() as any) });
+
+  /**
+   * Sync AI Settings back to the service when changed in the component
+   */
+  aiSettingsEffect = effect(() => {
+    const s = this.aiSettings();
+    untracked(() => {
+      this.settings.updateAiSettings(s);
+
+      // Reactively load models if provider is ollama
+      if (s.provider === 'ollama') {
+        this.loadOllamaModels();
+      }
+    });
+  });
 
   // Recommended Model Installation
   readonly RECOMMENDED_MODEL = 'qwen3-coder:32b';
@@ -1056,9 +901,6 @@ export class SettingsComponent implements OnInit {
   private tmdbDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
-    if (this.settings.$aiProvider() === 'ollama') {
-      this.loadOllamaModels();
-    }
     // Initial validation of keys if present
     if (this.settings.$tmdbApiKey() || this.settings.$omdbApiKey()) {
       this.validateAll();
@@ -1202,31 +1044,6 @@ export class SettingsComponent implements OnInit {
     this.settings.setVlcPath(input.value.trim());
   }
 
-  // AI Methods
-  async onAiProviderChange(event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    await this.settings.setAiProvider(select.value as any);
-    if (select.value === 'ollama') {
-      this.loadOllamaModels();
-    }
-  }
-
-  async onOllamaUrlChange(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setOllamaUrl(input.value);
-    this.loadOllamaModels();
-  }
-
-  async onOllamaModelChange(event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    console.log('[SettingsComponent] onOllamaModelChange:', select.value);
-    await this.settings.setOllamaModel(select.value);
-    console.log(
-      '[SettingsComponent] Model updated in service. Current signal value:',
-      this.settings.$ollamaModel(),
-    );
-  }
-
   async loadOllamaModels(): Promise<void> {
     this.ollamaModels.set([]);
     const models = await this.settings.getOllamaModels();
@@ -1254,52 +1071,15 @@ export class SettingsComponent implements OnInit {
     }
   }
 
-  async onOpenAiKeyInput(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setOpenAiApiKey(input.value);
-  }
-
-  async onOpenAiModelChange(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setOpenAiModel(input.value);
-  }
-
-  async onClaudeKeyInput(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setClaudeApiKey(input.value);
-  }
-
-  async onClaudeModelChange(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setClaudeModel(input.value);
-  }
-
-  async onGeminiKeyInput(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setGeminiApiKey(input.value);
-  }
-
-  async onGeminiModelChange(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    await this.settings.setGeminiModel(input.value);
+  async loadModels(): Promise<void> {
+    await this.loadOllamaModels();
   }
 
   async testConnection(): Promise<void> {
     this.connectionState.set('validating');
     this.connectionError.set('');
 
-    // Create temp settings object
-    const settings = {
-      provider: this.settings.$aiProvider(),
-      ollamaUrl: this.settings.$ollamaUrl(),
-      ollamaModel: this.settings.$ollamaModel(),
-      openaiApiKey: this.settings.$openaiApiKey(),
-      openaiModel: this.settings.$openaiModel(),
-      claudeApiKey: this.settings.$claudeApiKey(),
-      claudeModel: this.settings.$claudeModel(),
-      geminiApiKey: this.settings.$geminiApiKey(),
-      geminiModel: this.settings.$geminiModel(),
-    };
+    const settings = this.aiSettings();
 
     console.log(
       '[SettingsComponent] Testing connection with settings:',

@@ -65,17 +65,29 @@ async function crawl(dir: string, results: CleanerResultItem[]): Promise<void> {
 
         // Check for small files or 0-byte files
         const fileStat = await stat(fullPath);
+        const fileNameLower = entry.name.toLowerCase();
+        const pathLower = fullPath.toLowerCase();
+
         const isZeroByte = fileStat.size === 0;
         const isSmallNonSubtitle =
           fileStat.size < SMALL_FILE_THRESHOLD &&
           !SUBTITLE_EXTENSIONS.includes(ext);
 
-        if (isZeroByte || isSmallNonSubtitle) {
+        const isSample =
+          (fileNameLower.includes('sample') || pathLower.includes('sample')) &&
+          fileStat.size > 0 &&
+          fileStat.size < 100 * 1024 * 1024; // 100MB
+
+        // Success Criteria: 0-byte files are captured regardless of extension.
+        // Small files (<10MB) are only captured if not a subtitle.
+        // Sample files are captured based on name/path and size.
+        if (isZeroByte || isSmallNonSubtitle || isSample) {
           results.push({
             type: 'file',
             path: fullPath,
             filename: basename(fullPath),
             sizeBytes: fileStat.size,
+            isSample: isSample || undefined,
           });
         }
       }

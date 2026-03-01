@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmDialogService } from '@medularity/angular/decorators';
@@ -11,7 +10,7 @@ import { MediaStore } from '../../core/media.store';
 @Component({
   selector: 'app-cleaner-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="cleaner-container">
       <div class="cleaner-header">
@@ -21,17 +20,34 @@ import { MediaStore } from '../../core/media.store';
         </div>
 
         <div class="header-actions">
-          @if (
-            cleanerStore.status() === 'idle' ||
-            cleanerStore.status() === 'completed'
-          ) {
-            <button class="scan-btn" (click)="startScan()">
-              {{ lang.translate('cleaner.startScan') }}
-            </button>
-          } @else if (cleanerStore.isScanning()) {
+          @if (cleanerStore.isScanning()) {
             <button class="cancel-btn" (click)="cleanerStore.cancel()">
               {{ lang.translate('scan.cancel') }}
             </button>
+          } @else {
+            @if (cleanerStore.status() === 'reviewing') {
+              <button class="rescan-btn" (click)="startScan()">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 4v5h5M20 20v-5h-5" />
+                  <path
+                    d="M20 9A9 9 0 005.64 5.64L9 9M4 15a9 9 0 0014.36 3.36L15 15"
+                  />
+                </svg>
+                Rescan
+              </button>
+            } @else if (
+              cleanerStore.status() === 'idle' ||
+              cleanerStore.status() === 'completed'
+            ) {
+              <button class="scan-btn" (click)="startScan()">
+                {{ lang.translate('cleaner.startScan') }}
+              </button>
+            }
           }
 
           @if (selectedPaths().length > 0) {
@@ -167,6 +183,67 @@ import { MediaStore } from '../../core/media.store';
                             d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"
                           />
                           <path d="M13 2v7h7" />
+                        </svg>
+                      </div>
+                      <div class="item-info">
+                        <span class="item-name">{{ item.filename }}</span>
+                        <span class="item-details"
+                          >{{ formatSize(item.sizeBytes) }} •
+                          {{ item.path }}</span
+                        >
+                      </div>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+
+            <!-- Sample Files Section -->
+            @if (cleanerStore.sampleFiles().length > 0) {
+              <section class="result-section">
+                <div class="section-header">
+                  <h3>
+                    {{ lang.translate('cleaner.sampleFiles') }} ({{
+                      cleanerStore.sampleFiles().length
+                    }})
+                  </h3>
+                  <button
+                    class="select-all-btn"
+                    (click)="toggleSectionSelection('sample')"
+                  >
+                    {{
+                      isSectionAllSelected('sample')
+                        ? 'Deselect All'
+                        : 'Select All'
+                    }}
+                  </button>
+                </div>
+                <div class="items-list">
+                  @for (item of cleanerStore.sampleFiles(); track item.path) {
+                    <div
+                      class="item-row"
+                      [class.selected]="isSelected(item.path)"
+                      (click)="toggleSelection(item.path)"
+                      (keydown.enter)="toggleSelection(item.path)"
+                      (keydown.space)="toggleSelection(item.path)"
+                      tabindex="0"
+                    >
+                      <div class="item-checkbox">
+                        <div
+                          class="check-mark"
+                          [class.checked]="isSelected(item.path)"
+                        ></div>
+                      </div>
+                      <div class="item-icon sample">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                          <path d="M2 17l10 5 10-5" />
+                          <path d="M2 12l10 5 10-5" />
                         </svg>
                       </div>
                       <div class="item-info">
@@ -394,6 +471,10 @@ import { MediaStore } from '../../core/media.store';
         color: #6366f1;
         background: rgba(99, 102, 241, 0.1);
       }
+      .item-icon.sample {
+        color: #92400e;
+        background: rgba(252, 211, 77, 0.3);
+      }
 
       .item-icon svg {
         width: 18px;
@@ -448,7 +529,8 @@ import { MediaStore } from '../../core/media.store';
         cursor: not-allowed;
       }
 
-      .cancel-btn {
+      .cancel-btn,
+      .rescan-btn {
         padding: 0.625rem 1.25rem;
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
@@ -457,6 +539,21 @@ import { MediaStore } from '../../core/media.store';
         font-weight: 600;
         font-size: 0.875rem;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+      }
+
+      .rescan-btn:hover {
+        background: var(--color-bg-secondary);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+      }
+
+      .rescan-btn svg {
+        width: 16px;
+        height: 16px;
       }
 
       .loading-state,
@@ -546,21 +643,25 @@ export class CleanerDashboardComponent {
     );
   }
 
-  isSectionAllSelected(type: 'file' | 'folder'): boolean {
+  isSectionAllSelected(type: 'file' | 'folder' | 'sample'): boolean {
     const items =
       type === 'folder'
         ? this.cleanerStore.emptyFolders()
-        : this.cleanerStore.smallFiles();
+        : type === 'file'
+          ? this.cleanerStore.smallFiles()
+          : this.cleanerStore.sampleFiles();
 
     if (items.length === 0) return false;
     return items.every((item) => this.isSelected(item.path));
   }
 
-  toggleSectionSelection(type: 'file' | 'folder'): void {
+  toggleSectionSelection(type: 'file' | 'folder' | 'sample'): void {
     const items =
       type === 'folder'
         ? this.cleanerStore.emptyFolders()
-        : this.cleanerStore.smallFiles();
+        : type === 'file'
+          ? this.cleanerStore.smallFiles()
+          : this.cleanerStore.sampleFiles();
 
     const allSelected = this.isSectionAllSelected(type);
     const itemPaths = items.map((i) => i.path);
@@ -607,7 +708,7 @@ export class CleanerDashboardComponent {
   }
 
   formatSize(bytes?: number): string {
-    if (bytes === undefined) return '0 B';
+    if (bytes === undefined || bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

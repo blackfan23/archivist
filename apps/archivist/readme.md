@@ -6,7 +6,7 @@ A modern, cross-platform desktop application for managing and organizing your me
 
 ## Features
 
-### 🧠 Intelligent AI Analysis
+### Intelligent AI Analysis
 
 Transform your media library with AI-powered curator tools.
 Use **local LLM** via ollama or provide your own api key for openai, claude, google sdks.
@@ -23,7 +23,7 @@ Use **local LLM** via ollama or provide your own api key for openai, claude, goo
 
 ![AI Analysis Dashboard 1](./docs/images/ai1.png)
 
-### 🔍 Advanced Filtering & Sorting
+### Advanced Filtering & Sorting
 
 - **Rich Metadata**: Filter by resolution, codec, audio tracks, bitrate, and more.
 - **Incremental Scanning**: Local state persistence ensures only new files are processed.
@@ -32,7 +32,7 @@ Use **local LLM** via ollama or provide your own api key for openai, claude, goo
 
 ![Filtering Interface](./docs/images/demo1.png)
 
-### 🎬 Seamless Integration
+### Seamless Integration
 
 - **VLC Playback**: Direct integration for launching files in VLC.
 - **System Explorer**: Locate files on disk.
@@ -40,13 +40,24 @@ Use **local LLM** via ollama or provide your own api key for openai, claude, goo
 
 ![Matching Dialog](./docs/images/demo2.png)
 
-### 🌍 Internationalization
+### Internationalization
 
-Archivist is fully localized for:
+Archivist is localized for:
 
 - 🇺🇸 **English**
 - 🇸🇪 **Svenska**
 - 🇩🇪 **Deutsch**
+
+---
+
+## Ollama Setup
+
+Archivist supports running AI analysis completely locally and privately using **Ollama**. Ollama allows you to run large language models on your own machine without relying on external cloud APIs or subscriptions.
+
+### How to set it up:
+
+1. **Install Ollama**: Download and install Ollama from [ollama.com](https://ollama.com/).
+2. **Download a Model**: Open archivist settings and select the **Local (Ollama)** AI provider, and choose your downloaded model from the dropdown. Make sure Ollama is running in the background. Models are downloaded automatically but can be large files. Check the [ollama](https://ollama.com/models) website for available models.
 
 ---
 

@@ -45,7 +45,11 @@ export class CleanerStore {
   );
 
   readonly smallFiles = computed(() =>
-    this.results().filter((r) => r.type === 'file'),
+    this.results().filter((r) => r.type === 'file' && !r.isSample),
+  );
+
+  readonly sampleFiles = computed(() =>
+    this.results().filter((r) => r.type === 'file' && r.isSample),
   );
 
   async scan(path: string): Promise<void> {
@@ -55,6 +59,8 @@ export class CleanerStore {
 
     try {
       const results = await this.electronService.scanForCleanup(path);
+      // Small artificial delay to ensure the UI transition is visible to the user
+      await new Promise((resolve) => setTimeout(resolve, 400));
       this._results.set(results);
       this._status.set('reviewing');
     } catch (err) {

@@ -29,6 +29,9 @@
       ],
       "@medularity/archivist-core": [
         "libs/archivist-core/src/index.ts"
+      ],
+      "@medularity/angular/ai-model-selector": [
+        "libs/angular/ai-model-selector/src/index.ts"
       ]
     },
     "types": [

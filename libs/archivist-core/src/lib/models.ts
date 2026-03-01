@@ -649,4 +649,5 @@ export interface CleanerResultItem {
   path: string;
   sizeBytes?: number;
   filename?: string;
+  isSample?: boolean;
 }
