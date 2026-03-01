@@ -60,6 +60,8 @@ jobs:
           generate_release_notes: true
           files: |
             dist/executables/**/*.exe
+            !dist/executables/**/ffmpeg.exe
+            !dist/executables/**/ffprobe.exe
             dist/executables/**/*.dmg
             dist/executables/**/*.AppImage
             dist/executables/**/*.zip

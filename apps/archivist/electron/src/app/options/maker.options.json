@@ -9,14 +9,17 @@
   "mac": {
     "category": "public.app-category.utilities",
     "icon": "apps/archivist/electron/src/assets/icon.png",
-    "target": ["dmg", "zip"]
+    "target": ["dmg", "zip"],
+    "artifactName": "${name}-${version}-mac-${arch}.${ext}"
   },
   "win": {
     "target": "nsis",
-    "icon": "apps/archivist/electron/src/assets/icon.png"
+    "icon": "apps/archivist/electron/src/assets/icon.png",
+    "artifactName": "${name}-${version}-windows-${arch}.${ext}"
   },
   "linux": {
-    "target": ["AppImage", "deb"]
+    "target": ["AppImage", "deb"],
+    "artifactName": "${name}-${version}-linux-${arch}.${ext}"
   },
   "npmRebuild": false,
   "files": ["!**/node_modules/canvas/**", "!**/node_modules/**/canvas/**"]
