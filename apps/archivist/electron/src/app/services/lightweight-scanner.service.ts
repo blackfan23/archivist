@@ -14,57 +14,74 @@ export function requestCancelLightweightScan(): void {
 }
 
 /**
- * Attempt to extract series/season context from a file's parent and grandparent
- * folder names. Shared logic with scanner.service.ts — kept in sync manually.
+ * Attempt to extract series/season context from a file's path ancestry.
+ * Shared logic with scanner.service.ts — kept in sync manually.
  *
- * Recognized patterns:
- *   Parent: "Season 1", "Season 01", "S1", "Saison 2"
- *   Grandparent: "Show Name (2004)", "Show Name"
+ * Recognised context markers (searched backwards from the file):
+ *   1. Season folder: "Season 1", "Season 01", "S1", "Saison 2"
+ *   2. Episode-named folder: any folder containing a SxxExx pattern
+ *      e.g. "Babylon.Berlin.S01E03.AN.HDTV.x264-ACED"
+ *
+ * In both cases the show title is extracted from the folder immediately
+ * above the context marker, and the season number is parsed from it.
  */
 function extractPathContext(filePath: string): PathContext | undefined {
   const parts = filePath.split(/[\/\\]/);
 
-  // Iterate backwards to find a "Season X" folder
-  // Check up to 5 levels above the filename
-  let seasonIndex = -1;
-  let seasonMatch: RegExpMatchArray | null = null;
   const maxDepth = Math.max(0, parts.length - 7);
 
   for (let i = parts.length - 2; i >= maxDepth; i--) {
     const part = parts[i];
     if (!part) continue;
 
-    seasonMatch = part.match(/^(?:[Ss]eason|[Ss]aison|[Ss])\s*(\d{1,2})$/);
-    if (seasonMatch) {
-      seasonIndex = i;
-      break;
-    }
-  }
-
-  if (seasonIndex === -1 || !seasonMatch) return undefined;
-
-  const season = parseInt(seasonMatch[1], 10);
-  const grandparent = parts[seasonIndex - 1]; // Folder containing "Season X"
-
-  let showTitle: string | undefined;
-  let year: string | undefined;
-
-  if (grandparent) {
-    const showYearMatch = grandparent.match(
-      /^(.+?)\s*\(((?:19|20)\d{2})\)\s*$/,
+    // --- Pattern 1: explicit "Season X" / "Saison X" / "S X" folder ---
+    const seasonMatch = part.match(
+      /^(?:[Ss]eason|[Ss]aison|[Ss])\s*(\d{1,2})$/,
     );
-    if (showYearMatch) {
-      showTitle = showYearMatch[1].trim();
-      year = showYearMatch[2];
-    } else {
-      showTitle = grandparent.trim();
+    if (seasonMatch) {
+      const season = parseInt(seasonMatch[1], 10);
+      const showTitle = extractShowTitle(parts[i - 1]);
+      const year = extractYear(parts[i - 1]);
+      const context: PathContext = { season };
+      if (showTitle) context.showTitle = showTitle;
+      if (year) context.year = year;
+      return context;
+    }
+
+    // --- Pattern 2: episode-named folder (e.g. "Show.S01E03.HDTV.x264") ---
+    // Skip the direct parent of the file (i = parts.length - 2) only if it is
+    // also the ONLY parent — i.e. the file is directly in the show root.
+    // We do want to match episode-named folders that sit between the show
+    // folder and the file.
+    const episodeFolderMatch = part.match(/[Ss](\d{1,2})[\s.]*[Ee](\d{1,3})/i);
+    if (episodeFolderMatch) {
+      const season = parseInt(episodeFolderMatch[1], 10);
+      // The show folder is the parent of this episode folder
+      const showTitle = extractShowTitle(parts[i - 1]);
+      const year = extractYear(parts[i - 1]);
+      const context: PathContext = { season };
+      if (showTitle) context.showTitle = showTitle;
+      if (year) context.year = year;
+      return context;
     }
   }
 
-  const context: PathContext = { season };
-  if (showTitle) context.showTitle = showTitle;
-  if (year) context.year = year;
-  return context;
+  return undefined;
+}
+
+/** Extract a clean show title from a raw folder name, stripping year suffixes and normalizing characters. */
+function extractShowTitle(folder: string | undefined): string | undefined {
+  if (!folder) return undefined;
+  // Strip (Year) and then normalize characters (dots/underscores to spaces)
+  const raw = folder.replace(/\s*\(((?:19|20)\d{2})\)\s*$/, '').trim();
+  return raw.replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Extract a 4-digit year from a raw folder name like "Show Name (2004)". */
+function extractYear(folder: string | undefined): string | undefined {
+  if (!folder) return undefined;
+  const m = folder.match(/\(((?:19|20)\d{2})\)/);
+  return m ? m[1] : undefined;
 }
 
 /**

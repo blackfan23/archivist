@@ -64,7 +64,7 @@ const RELEASE_TAGS: RegExp[] = [
   /\b(aac|ac3|eac3|dts|dts-hd|truehd|atmos|flac)\b/gi,
   /\[.*?\]/g, // brackets
   /\((?!(?:19|20)\d{2}\)).*?\)/g, // parentheses — but preserve (YEAR) like (2023)
-  /\bS\d{1,2}E\d{1,3}\b/gi, // S01E01
+  /\bS\d{1,2}\s*E\d{1,3}\b/gi, // S01E01 or S01 E01
   /\b\d{1,2}x\d{2,3}\b/gi, // 1x01
   /\bSeason\s*\d{1,2}\b/gi,
   /\bEpisode\s*\d{1,3}\b/gi,
@@ -75,7 +75,7 @@ const RELEASE_TAGS: RegExp[] = [
  */
 export interface EpisodeInfo {
   season: number;
-  episode: number;
+  episodes: number[];
   rawMatch: string;
 }
 
@@ -111,92 +111,98 @@ export const AnalysisService = {
   },
   detectEpisodeInfo(filename: string, parentDir: string): EpisodeInfo | null {
     const combined = `${filename} ${parentDir}`;
+    let episodes: number[] = [];
+    let season: number | null = null;
+    let rawMatch = '';
 
-    // 0. Detect season folder context early
-    const seasonFolder = parentDir.match(
-      /[Ss]eason\s*(\d{1,2})|[Ss]aison\s*(\d{1,2})/i,
+    // Detect season folder context early for fallbacks
+    const seasonFolder =
+      parentDir.match(/[Ss]eason\s*(\d{1,2})|[Ss]aison\s*(\d{1,2})/i) ||
+      parentDir.match(/\b[Ss](\d{1,2})\b/);
+
+    // --- Search Patterns ---
+
+    // 1. SxxExx (multi-support: S01E01E02, S01E01-E02, S01E01 E02)
+    const sxxexxMatches = Array.from(
+      combined.matchAll(
+        /[Ss](\d{1,2})\s*(?:[Ee](\d{1,3})(?:\s*[Ee-]\s*(\d{1,3}))?)/gi,
+      ),
     );
 
-    // 1. SxxExx — most common, highest confidence
-    const sxxexx = combined.match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
-    if (sxxexx) {
-      return {
-        season: parseInt(sxxexx[1], 10),
-        episode: parseInt(sxxexx[2], 10),
-        rawMatch: sxxexx[0],
-      };
+    if (sxxexxMatches.length > 0) {
+      season = parseInt(sxxexxMatches[0][1], 10);
+      rawMatch = sxxexxMatches[0][0];
+      for (const m of sxxexxMatches) {
+        if (m[2]) episodes.push(parseInt(m[2], 10));
+        if (m[3]) episodes.push(parseInt(m[3], 10));
+      }
     }
 
-    // 2. NxNN (e.g. 1x03)
-    const nxnn = combined.match(/\b(\d{1,2})x(\d{2,3})\b/i);
-    if (nxnn) {
-      return {
-        season: parseInt(nxnn[1], 10),
-        episode: parseInt(nxnn[2], 10),
-        rawMatch: nxnn[0],
-      };
+    // 2. NxNN (e.g. 1x03, 01 x 01)
+    if (episodes.length === 0) {
+      const nxnn = combined.match(/\b(\d{1,2})\s*[xX]\s*(\d{2,3})\b/);
+      if (nxnn) {
+        season = parseInt(nxnn[1], 10);
+        episodes = [parseInt(nxnn[2], 10)];
+        rawMatch = nxnn[0];
+      }
     }
 
     // 3. SxxEyy shorthand (e.g. 208, 1105, S208)
-    const shorthand = combined.match(/\b([Ss])?(\d{1,2})(\d{2})\b/);
-    if (shorthand) {
-      const hasExplicitS = !!shorthand[1];
-      const s = parseInt(shorthand[2], 10);
-      const e = parseInt(shorthand[3], 10);
+    if (episodes.length === 0) {
+      const shorthand = combined.match(/\b([Ss])?(\d{1,2})(\d{2})\b/i);
+      if (shorthand) {
+        const hasExplicitS = !!shorthand[1];
+        const s = parseInt(shorthand[2], 10);
+        const e = parseInt(shorthand[3], 10);
 
-      // Prevent 4-digit release years (e.g. 1979, 2023) from being parsed as SxxExx
-      // unless they are explicitly prefixed with 'S'
-      const isLikelyYear = /^(19|20)\d{2}$/.test(shorthand[0]) && !hasExplicitS;
-
-      // If it's a 3-digit number (e.g. 360) and NO 'S' prefix and NO Season folder context,
-      // then it's highly likely just a number in a movie title (like "360", "300").
-      const isAmbiguousNumber =
-        shorthand[0].length === 3 && !hasExplicitS && !seasonFolder;
-
-      if (s > 0 && s < 50 && !isLikelyYear && !isAmbiguousNumber) {
-        return { season: s, episode: e, rawMatch: shorthand[0] };
+        if (hasExplicitS || (s > 0 && s <= 30 && e > 0 && e <= 50)) {
+          season = s;
+          episodes = [e];
+          rawMatch = shorthand[0];
+        }
       }
     }
 
-    // 4. Standalone Ep (e.g. Ep 03, Episode 12) — assume Season 1 if no other context
-    const standaloneEp = combined.match(
-      /\b(?:[Ee]pisode|[Ee]p\.?)\s*(\d{1,3})\b/i,
-    );
-    if (standaloneEp) {
-      return {
-        season: seasonFolder
+    // 4. Standalone Ep (e.g. Ep 03, Episode 12)
+    if (episodes.length === 0) {
+      const standaloneEp = combined.match(
+        /\b(?:[Ee]pisode|[Ee]p\.?)\s*(\d{1,3})\b/i,
+      );
+      if (standaloneEp) {
+        season = seasonFolder
           ? parseInt(seasonFolder[1] ?? seasonFolder[2], 10)
-          : 1,
-        episode: parseInt(standaloneEp[1], 10),
-        rawMatch: standaloneEp[0],
-      };
-    }
-
-    // 5. Season N folder + Episode N in filename (loose folder-based)
-    const episodeInName = filename.match(
-      /[Ee]pisode\s*(\d{1,3})|[Ee]p\.?\s*(\d{1,3})/i,
-    );
-    if (seasonFolder && episodeInName) {
-      const s = parseInt(seasonFolder[1] ?? seasonFolder[2], 10);
-      const e = parseInt(episodeInName[1] ?? episodeInName[2], 10);
-      return { season: s, episode: e, rawMatch: `Season ${s}/Episode ${e}` };
-    }
-
-    // 6. Fallback: search for ANY standalone number in the filename if we know the season
-    if (seasonFolder) {
-      const s = parseInt(seasonFolder[1] ?? seasonFolder[2], 10);
-      // Only match 1-3 digit numbers that AREN'T part of the show title (check word boundaries and context)
-      // and skip numbers that look like years if they are exactly 4 digits
-      const standaloneNum = filename.match(/\b(\d{1,3})\b/);
-      if (standaloneNum) {
-        return {
-          season: s,
-          episode: parseInt(standaloneNum[1], 10),
-          rawMatch: standaloneNum[0],
-        };
+          : 1;
+        episodes = [parseInt(standaloneEp[1], 10)];
+        rawMatch = standaloneEp[0];
       }
     }
 
+    // 5. Fallback: separator-gated number
+    if (episodes.length === 0 && seasonFolder) {
+      season = parseInt(seasonFolder[1] || seasonFolder[2], 10);
+      const afterSep = filename.match(
+        /[-_.\s]+(\d{1,3})(?!\d)(?!\s*(?:19|20)\d{2})/i,
+      );
+      if (afterSep) {
+        episodes = [parseInt(afterSep[1], 10)];
+        rawMatch = afterSep[0].trim();
+      }
+    }
+
+    if (season !== null && episodes.length > 0) {
+      const result: EpisodeInfo = {
+        season,
+        episodes: Array.from(new Set(episodes)), // Deduplicate
+        rawMatch,
+      };
+      console.log(
+        `[AnalysisService] detectEpisodeInfo for "${filename}": S${result.season}E[${result.episodes.join(',')}]`,
+      );
+      return result;
+    }
+
+    console.log(`[AnalysisService] detectEpisodeInfo for "${filename}": NULL`);
     return null;
   },
   /**
@@ -219,6 +225,45 @@ export const AnalysisService = {
             "type": "movie" | "tv" | "unknown"
           }
           `;
+  },
+  /**
+   * Identifies the logical root directory of a TV show based on season/episode folder heuristics.
+   */
+  getShowRootDirectory(filePath: string): string {
+    const parts = filePath.split(path.sep);
+    // Ignore the filename itself, look up to 7 folders up
+    const maxDepth = Math.max(0, parts.length - 7);
+
+    for (let i = parts.length - 2; i >= maxDepth; i--) {
+      const part = parts[i];
+      if (!part) continue;
+
+      // Pattern 1: explicit "Season X" / "Saison X" / "S X" folder
+      if (part.match(/^(?:[Ss]eason|[Ss]aison|[Ss])\s*(\d{1,2})$/i)) {
+        return parts.slice(0, i).join(path.sep);
+      }
+
+      // Pattern 2: episode-named folder (e.g. "Show.S01E03.HDTV.x264")
+      if (part.match(/[Ss](\d{1,2})[\s.]*[Ee](\d{1,3})/i)) {
+        return parts.slice(0, i).join(path.sep);
+      }
+    }
+
+    // Default to immediate parent
+    return path.dirname(filePath);
+  },
+  /**
+   * Determines if a folder name safely isolates a specific TV show.
+   */
+  isIsolatedShowFolder(showRoot: string, showKey: string): boolean {
+    const rootName = this.cleanFilename(path.basename(showRoot)).toLowerCase();
+    const key = showKey.toLowerCase();
+
+    if (rootName === key) return true;
+    if (rootName.includes(key) || key.includes(rootName)) return true;
+    if (rootName.replace(/\s/g, '') === key.replace(/\s/g, '')) return true;
+
+    return false;
   },
   /**
    * Run analysis on a list of files using a live queue.
@@ -275,6 +320,13 @@ export const AnalysisService = {
       if (showKey !== null) {
         // TV episode branch — collect all files for this show from the queue
         const showFiles: LightweightFile[] = [file];
+        const showRoot = this.getShowRootDirectory(file.path);
+        const isIsolated = this.isIsolatedShowFolder(showRoot, showKey);
+
+        console.log(
+          `[AnalysisService] ShowRoot: ${showRoot}, IsIsolated: ${isIsolated}`,
+        );
+
         let i = 0;
         while (i < queue.length) {
           const candidate = queue[i]!;
@@ -287,9 +339,18 @@ export const AnalysisService = {
             candidateParentDir,
             candidate.pathContext,
           );
-          if (candidateKey === showKey) {
+
+          let isSameFolder = false;
+          if (isIsolated) {
+            const candidateShowRoot = this.getShowRootDirectory(candidate.path);
+            if (candidateShowRoot === showRoot) {
+              isSameFolder = true;
+            }
+          }
+
+          if (candidateKey === showKey || isSameFolder) {
             console.log(
-              `[AnalysisService] Grouping: ${candidateFilename} with ${showKey}`,
+              `[AnalysisService] Grouping: ${candidateFilename} with ${showKey} (SameKey: ${candidateKey === showKey}, SameFolder: ${isSameFolder})`,
             );
             showFiles.push(candidate);
             queue.splice(i, 1); // remove from queue
@@ -358,9 +419,15 @@ export const AnalysisService = {
     parentDir: string,
     pathContext?: PathContext,
   ): string | null {
-    // 1. PathContext from scanner (most reliable — folder hierarchy already parsed)
+    // 1. PathContext from scanner (establish canonical key)
     if (pathContext?.showTitle) {
-      return pathContext.showTitle.trim().toLowerCase();
+      // Force space normalization (dots/underscores to spaces) to ensure alignment
+      // with filename-extracted titles.
+      const normalizedContextTitle = pathContext.showTitle
+        .replace(/[._]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return normalizedContextTitle.toLowerCase();
     }
 
     // 2. Detect episode info from filename / parent dir
@@ -393,7 +460,11 @@ export const AnalysisService = {
 
     // Final secondary clean
     extractedTitle = this.cleanFilename(extractedTitle);
-    return extractedTitle.toLowerCase() || null;
+    const resultKey = extractedTitle.toLowerCase() || null;
+    console.log(
+      `[AnalysisService] deriveShowKey: "${filename}" -> "${resultKey}" (PathCtx: ${pathContext?.showTitle || 'none'})`,
+    );
+    return resultKey;
   },
 
   /**
@@ -509,19 +580,24 @@ export const AnalysisService = {
       const parentDir = path.basename(path.dirname(file.path));
       let epInfo = this.detectEpisodeInfo(filename, parentDir);
 
-      // PathContext Fallback
+      // PathContext Fallback — use separator-gated match only, never grab the first number blindly
       if (!epInfo && file.pathContext?.season !== undefined) {
-        const epMatch = filename.match(/\b(\d{1,3})\b/);
-        if (epMatch) {
+        const afterSep = filename.match(
+          /[-_.\s]+(\d{1,3})(?!\d)(?!\s*(?:19|20)\d{2})/,
+        );
+        if (afterSep) {
           epInfo = {
             season: file.pathContext.season,
-            episode: parseInt(epMatch[1], 10),
-            rawMatch: 'Scanner PathContext Fallback',
+            episodes: [parseInt(afterSep[1], 10)],
+            rawMatch: 'Scanner PathContext Fallback (separator-gated)',
           };
         }
       }
 
       if (epInfo) {
+        console.log(
+          `[AnalysisService] Group match: ${filename} -> S${epInfo.season}E[${epInfo.episodes.join(',')}]`,
+        );
         epInfoCount++;
         if (!filesBySeason.has(epInfo.season)) {
           filesBySeason.set(epInfo.season, []);
@@ -529,15 +605,85 @@ export const AnalysisService = {
         filesBySeason.get(epInfo.season)!.push({ file, epInfo });
       } else {
         console.log(
-          `[AnalysisService] Episode info failed for: ${filename} (Parent: ${parentDir})`,
+          `[AnalysisService] Episode info failed for: ${filename} (Parent: ${parentDir}). Individually analyzing...`,
         );
-        onProgress(await this.analyzeFile(file));
+        const individual = await this.analyzeFile(file);
+        if (
+          individual.metadata?.type === 'tv' &&
+          individual.metadata.episode &&
+          individual.metadata.tmdbId === tvMatch.id
+        ) {
+          const s = individual.metadata.season || 1;
+          const e = individual.metadata.episode;
+          console.log(
+            `[AnalysisService] Case deduplication: ${filename} matched individually as S${s}E${e}. Registering as found for batch.`,
+          );
+          if (!filesBySeason.has(s)) {
+            filesBySeason.set(s, []);
+          }
+          filesBySeason.get(s)!.push({
+            file,
+            epInfo: {
+              season: s,
+              episodes: [e],
+              rawMatch: 'Individual Fallback Match',
+            },
+          });
+          epInfoCount++;
+          // DO NOT call onProgress(individual) here — the batch loop below will handle it
+          // with the correct seriesRoot and formatting.
+        } else {
+          // Different show or movie — emit individually now
+          onProgress(individual);
+        }
       }
     }
 
     console.log(
+      `[AnalysisService] Season mapping for "${group.showKey}":`,
+      Array.from(filesBySeason.entries())
+        .map(([s, files]) => `Season ${s}: ${files.length} files`)
+        .join(', '),
+    );
+
+    console.log(
       `[AnalysisService] Group episodes detected: ${epInfoCount}/${group.files.length} files`,
     );
+
+    // 4b. Detect missing seasons — seasons present in TMDB but with no local files
+    const { sanitizePathSegment: sanitize } =
+      await import('@medularity/archivist-core');
+    const sanitizedTitleForMissing = sanitize(canonicalTitle);
+    const showFolderForMissing = sanitize(
+      `${sanitizedTitleForMissing}${canonicalYear ? ` (${canonicalYear})` : ''}`,
+    );
+    const totalSeasons = showDetails?.number_of_seasons ?? 0;
+    const presentSeasons = new Set(filesBySeason.keys());
+
+    for (let s = 1; s <= totalSeasons; s++) {
+      if (!presentSeasons.has(s)) {
+        const missingSeasonResult: AnalysisResult = {
+          filePath: `missing://${tvMatch.id}/${s}`,
+          originalName: '[MISSING SEASON]',
+          suggestedName: `${sanitizedTitleForMissing} - Season ${s}.missing`,
+          isClean: false,
+          isMissing: true,
+          score: 0,
+          reason: 'Missing Season',
+          seriesRoot: path.join(showFolderForMissing, `Season ${s}`),
+          metadata: {
+            title: canonicalTitle,
+            year: canonicalYear || '',
+            season: s,
+            episode: 0,
+            tmdbId: tvMatch.id,
+            posterUrl: tvMatch.posterUrl,
+            type: 'tv',
+          },
+        };
+        onProgress(missingSeasonResult);
+      }
+    }
 
     // 5. Process each season
     for (const [seasonNum, seasonFiles] of filesBySeason.entries()) {
@@ -576,16 +722,31 @@ export const AnalysisService = {
         for (const { file, epInfo } of seasonFiles) {
           if (cancelRequested) break;
           const filename = path.basename(file.path);
-          foundEpisodes.add(epInfo.episode);
 
+          // Track ALL episodes in this file for deduplication
+          for (const epNum of epInfo.episodes) {
+            foundEpisodes.add(Number(epNum));
+          }
+
+          const primaryEp = epInfo.episodes[0];
           const epDetails = seasonDetails.episodes.find(
-            (e) => e.episode_number === epInfo.episode,
+            (e) => e.episode_number === primaryEp,
           );
 
           const episodeTitle = epDetails?.name
             ? sanitizePathSegment(epDetails.name)
             : undefined;
-          const sCode = `S${seasonNum.toString().padStart(2, '0')}E${epInfo.episode.toString().padStart(2, '0')}`;
+
+          // S-Code: show multi episodes if detected, e.g. S01E01-E02
+          let sCode = `S${seasonNum.toString().padStart(2, '0')}`;
+          if (epInfo.episodes.length > 1) {
+            sCode += epInfo.episodes
+              .map((e) => `E${e.toString().padStart(2, '0')}`)
+              .join('-');
+          } else {
+            sCode += `E${primaryEp.toString().padStart(2, '0')}`;
+          }
+
           const ext = path.extname(filename);
 
           let baseName = '';
@@ -612,7 +773,7 @@ export const AnalysisService = {
               title: canonicalTitle,
               year: canonicalYear || '',
               season: seasonNum,
-              episode: epInfo.episode,
+              episode: primaryEp,
               episodeTitle,
               tmdbId: tvMatch.id,
               posterUrl: tvMatch.posterUrl,
@@ -622,6 +783,9 @@ export const AnalysisService = {
             sizeBytes: file.sizeBytes,
           };
 
+          console.log(
+            `[AnalysisService] Emitting result for ${sCode}: ${suggestedName} (File: ${file.path})`,
+          );
           onProgress(result);
         }
 
@@ -631,8 +795,16 @@ export const AnalysisService = {
           return new Date(e.air_date) <= new Date();
         });
 
+        console.log(
+          `[AnalysisService] Season ${seasonNum} Missing Detection Prep:`,
+          `FoundEpisodes: [${Array.from(foundEpisodes)
+            .sort((a, b) => a - b)
+            .join(', ')}]`,
+          `AiredEpisodes: [${airedEpisodes.map((e) => e.episode_number).join(', ')}]`,
+        );
+
         for (const ep of airedEpisodes) {
-          if (!foundEpisodes.has(ep.episode_number)) {
+          if (!foundEpisodes.has(Number(ep.episode_number))) {
             const sCode = `S${seasonNum.toString().padStart(2, '0')}E${ep.episode_number.toString().padStart(2, '0')}`;
             const sanitizedEpName = ep.name ? sanitizePathSegment(ep.name) : '';
             const missingSuggested = ep.name
@@ -659,6 +831,9 @@ export const AnalysisService = {
                 type: 'tv',
               },
             };
+            console.log(
+              `[AnalysisService] Emitting MISSING for S${seasonNum}E${ep.episode_number}: ${missingSuggested}`,
+            );
             onProgress(missingResult);
           }
         }
@@ -746,17 +921,19 @@ export const AnalysisService = {
       return cleanedFile;
     }
 
-    // 1. Detect episode info early
+    // 1. Detect episode info early (Case-Insensitive)
     let episodeInfo = this.detectEpisodeInfo(filename, parentDir);
 
-    // PathContext Fallback for individual analysis
+    // PathContext Fallback for individual analysis — separator-gated, never blind
     if (!episodeInfo && pathContext?.season !== undefined) {
-      const epMatch = filename.match(/\b(\d{1,3})\b/);
-      if (epMatch) {
+      const afterSep = filename.match(
+        /[-_.\s]+(\d{1,3})(?!\d)(?!\s*(?:19|20)\d{2})/i,
+      );
+      if (afterSep) {
         episodeInfo = {
           season: pathContext.season,
-          episode: parseInt(epMatch[1], 10),
-          rawMatch: 'Scanner PathContext Fallback',
+          episodes: [parseInt(afterSep[1], 10)],
+          rawMatch: 'Scanner PathContext Fallback (separator-gated)',
         };
       }
     }
@@ -1028,7 +1205,7 @@ export const AnalysisService = {
           if (numMatch) {
             episodeInfo = {
               season: 1,
-              episode: parseInt(numMatch[1], 10),
+              episodes: [parseInt(numMatch[1], 10)],
               rawMatch: 'Forced TV Fallback',
             };
           }
@@ -1036,11 +1213,11 @@ export const AnalysisService = {
 
         if (episodeInfo) {
           resultMetadata.season = episodeInfo.season;
-          resultMetadata.episode = episodeInfo.episode;
+          resultMetadata.episode = episodeInfo.episodes[0];
           resultMetadata.episodeTitle = enrichedEpisodeTitle;
 
           const seasonStr = String(episodeInfo.season).padStart(2, '0');
-          const episodeStr = String(episodeInfo.episode).padStart(2, '0');
+          const episodeStr = String(episodeInfo.episodes[0]).padStart(2, '0');
 
           let baseName = '';
           if (enrichedEpisodeTitle) {

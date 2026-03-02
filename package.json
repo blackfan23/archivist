@@ -6,7 +6,7 @@
     "email": "donotreply@googlemail.com"
   },
   "private": false,
-  "version": "2.0.16",
+  "version": "2.1.0",
   "license": "GNU General Public License v3.0",
   "scripts": {
     "archivist:extract": "bun scripts/extract-archivist.ts ~/Developer/archivist",
@@ -56,7 +56,8 @@
     "@nx/esbuild": "22.5.3",
     "@nx/js": "22.5.3",
     "@nx/workspace": "22.5.3",
-    "eslint": "^9.8.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
     "angular-eslint": "21.2.0",
     "electron": "40.6.1",
     "electron-builder": "26.8.1",
